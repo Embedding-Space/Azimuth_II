@@ -3,3 +3,5 @@ data/tensors/gamma_qwen3_4b_instruct_2507.safetensors
 data/tensors/control_vectors_gaussian.safetensors
 docs/2505.09388v1.pdf
 .DS_Store
+data/embeddings*
+notebooks/training_output/
