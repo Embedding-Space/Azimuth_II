@@ -5,3 +5,4 @@ docs/2505.09388v1.pdf
 .DS_Store
 data/embeddings*
 notebooks/training_output/
+.venv/
