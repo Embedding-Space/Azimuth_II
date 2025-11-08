@@ -104,6 +104,21 @@ Use **42** consistently for all stochastic operations (sampling, UMAP, random in
 
 Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wants something different, he'll say so.
 
+### Editing Notebooks
+
+**CRITICAL:** When working with Jupyter notebooks:
+
+- ✓ **DO:** Use `NotebookEdit` to change the **contents** of existing cells
+- ✗ **DO NOT:** Use `NotebookEdit` to insert, delete, or reorder cells
+- ✗ **DO NOT:** Use JSON manipulation, `jq`, or other tools to modify notebook structure
+- ✗ **DO NOT:** Use inline Python/bash to edit `.ipynb` files directly
+
+**If cells need to be added/removed:** Ask Jeffery to add blank cells where needed, then edit their contents.
+
+**If a notebook is broken:** Delete the file and write a fresh copy with `Write` tool.
+
+**Rationale:** The `NotebookEdit` insert/delete functions are unreliable and create malformed notebooks. Keeping cell structure stable prevents issues.
+
 ---
 
 ## Data Storage
@@ -122,6 +137,29 @@ from safetensors.torch import save_file, load_file
 save_file({'gamma_prime': gamma_centered}, 'data/tensors/gamma_centered.safetensors')
 gamma_prime = load_file('data/tensors/gamma_centered.safetensors')['gamma_prime']
 ```
+
+### Large Datasets (HDF5 format)
+
+For datasets >5 GB that would cause RAM issues, use **HDF5 with streaming writes**:
+
+```python
+import h5py
+
+# Write incrementally (no RAM accumulation)
+with h5py.File('output.h5', 'w') as f:
+    dataset = f.create_dataset('data', shape=(1000, 2100, 2560), dtype='float16',
+                               chunks=(256, 2100, 2560), compression='gzip', compression_opts=1)
+    for batch_idx in range(n_batches):
+        batch = generate_batch()  # Generate on GPU
+        dataset[start:end] = batch.cpu().numpy()  # Stream to disk
+
+# Read efficiently (lazy loading)
+with h5py.File('output.h5', 'r') as f:
+    single_sample = torch.from_numpy(f['data'][42])  # Loads only one sample
+    subset = torch.from_numpy(f['data'][:100])       # Loads first 100
+```
+
+**Why HDF5:** Safetensors doesn't support append mode—you must load entire tensor into RAM. HDF5 allows chunked, incremental writes ideal for large-scale data generation.
 
 ### Notebook Outputs
 
@@ -234,5 +272,5 @@ See `references.bib` for BibTeX entries. Keep this updated as we pull in more pa
 
 ---
 
-*Last updated: November 2, 2025*
+*Last updated: November 8, 2025*
 *Working in Claude Code with Alpha*
