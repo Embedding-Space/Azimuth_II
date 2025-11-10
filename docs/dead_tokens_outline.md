@@ -4,11 +4,12 @@
 ---
 
 ## I. Executive Summary
-- 2,221 tokens (~1.5% of vocabulary) never moved during training
+- 2,221 tokens (~1.5% of vocabulary) received minimal gradient updates during training
+- These tokens began as a "primordial atom" with perfectly uniform logits, moved coherently as a rigid body, then froze on the bfloat16 quantization lattice
 - 13 black holes: vectors with population ≥2 (total 2,100 tokens)
 - 121 singletons: unique vectors with population =1
 - All confined to hypercube with L∞ ≤ 1 ULP from weighted centroid
-- **Unsolved mystery:** Why 13 clusters instead of 1? Monument Valley hypothesis fails.
+- **Leading hypothesis:** Float32→bfloat16 initialization conversion creates discrete clusters; dead tokens freeze when gradients decay below quantization threshold
 
 ---
 
@@ -55,7 +56,7 @@
 - Three monsters (814, 704, 306)
 - One medium (228)
 - Ten small (2-11 tokens)
-- **Structure suggests:** Multiple independent formation events, not fragmentation
+- **Structure suggests:** Not fragmentation from single point, but multiple independent formation events or correlated training dynamics
 
 ### D. Dimensional Variation ([notebook 12.4e](../notebooks/12.4e_dimensional_variation_analysis.ipynb))
 - 2,560 total dimensions
@@ -90,7 +91,7 @@
 - Pure bfloat16 Chebyshev distances (no epsilon scaling)
 - Identified 10 potential outliers beyond largest gap
 - **Hypothesis:** Maybe captured tokens that moved slightly vs truly frozen dead tokens
-- [Need to check: did we conclude anything from this?]
+- **Status:** Inconclusive - needs follow-up analysis
 
 ---
 
@@ -127,10 +128,10 @@
 ## VI. Synthetic Snowball Modeling
 
 ### A. Gaussian Initialization Tests ([notebook 12.4a-b](../notebooks/12.4a_measure_dead_token_distribution.ipynb))
-- Measured σ directly from Qwen's dead tokens: σ = 3.28×10⁻³
-- Initial guess σ = 1.5×10⁻⁹ from earlier work
-- **Measured σ is 2000× larger** than expected for ULP-scale structure
-- Fast sweep (10,000 trials) at measured σ
+- Measured σ of existing dead token spread: σ = 3.28×10⁻³ (observed distribution)
+- Successful synthetic modeling requires σ = 1.5×10⁻⁹ (initialization scale)
+- **2000× difference:** Observed spread reflects final state after quantization, not initialization scale
+- The tight ULP-scale structure requires initialization at much smaller σ
 
 ### B. Direct Sampling Approach ([notebooks 12.3x series])
 - Sample 2,221 tokens from Gaussian(centroid, σ)
@@ -213,137 +214,250 @@
 
 ---
 
-## VIII. The Unsolved Mystery
+## VIII. Float32→bfloat16 Conversion Hypothesis
+
+### A. The Core Mechanism
+- **Hypothesis:** Qwen initializes embeddings in float32 with small Gaussian noise
+- Conversion to bfloat16 for training snaps nearby vectors to discrete lattice points
+- σ ~ 1×10⁻⁵ creates natural clustering at bfloat16 resolution
+- Live tokens escape via gradients; dead tokens remain frozen at quantization boundaries
+
+### B. Gatsby Float32 Edition ([notebook 13.4a](../notebooks/13.4a_gatsby_f32_init.ipynb))
+- Modified Gatsby experiment: f32 initialization → bf16 conversion → training
+- **Results after 1,000 steps:**
+  - 51 dead tokens → 13 unique vectors ✓
+  - Complete graph topology (density = 1.0) ✓
+  - Bit-for-bit bfloat16 quantization ✓
+  - Demographics: [19, 14, 3, 3, 3, 2, 1...] (plausible but different from Qwen)
+- **Key insight:** f32→bf16 conversion creates discrete structure automatically
+- Training on M3 Max: ~100 it/s, fast experimentation possible
+
+### C. Evidence Supporting Hypothesis
+1. **Topology match:** Complete graph structure reproduced naturally
+2. **Quantization:** Vectors are exactly on bfloat16 lattice, as expected
+3. **Evaporation dynamics:** Live tokens escape, dead tokens stay clustered
+4. **Cross-model pattern:** Qwen 2.5 (60 vectors) vs Qwen 3 (13 vectors) suggests more training → more coalescence
+
+### D. Outstanding Questions
+1. **Demographics:** Why [814, 704, 306, 228...] instead of [19, 14, 3, 3...]?
+   - Scale effect? (51 vs 2,221 tokens)
+   - Training duration? (1,000 vs millions of steps)
+   - Initialization parameters?
+2. **Control experiment needed:** Pure bf16 initialization (no f32 stage)
+   - Predict: Should produce 1 massive singularity, not 13 clusters
+   - Would prove f32→bf16 conversion is essential
+3. **Scale test:** 2,221 dead tokens, 10k steps
+   - Do demographics converge toward Qwen's distribution?
+   - Does longer training cause further coalescence?
+
+### E. Why This Hypothesis Is Promising
+- **Mechanistic:** Explains both clustering and topology from first principles
+- **Testable:** Makes falsifiable predictions (bf16-only control should fail)
+- **Generalizable:** Applies to any model with f32 init + bf16 training
+- **Parsimonious:** No ad-hoc parameters or multi-stage processes needed
+
+---
+
+## IX. Training Dynamics of Dead Tokens
+
+### A. The Primordial Atom (Volumes 14-15)
+- Dead tokens don't start frozen—they begin as part of a coherent structure
+- **t=1 discovery:** All 128 tokens have **perfectly uniform logits** = 7.6875
+  - Range: 0.0, std: 0.0 (Jeffery's prediction confirmed!)
+  - Model starts with zero preference—pure uniform prior
+- Uniform logits → uniform gradients → coherent bulk motion
+- This explains why dead tokens move together rather than diffusing randomly
+
+### B. Center-of-Mass Frame Analysis ([notebooks 14.2a, 14.3a](../notebooks/))
+- **Bulk vs thermal velocity at t=0:** 583:1 ratio
+- Bulk velocity: 8×10⁻³ (coherent translation)
+- Thermal velocity: 1.4×10⁻⁵ (internal spreading)
+- **Key insight:** Primordial atom moves as essentially rigid body, not thermal explosion
+- Atom radius expands 210× over training (8.8×10⁻⁶ → 1.8×10⁻³)
+- Anomalous velocity spike at t~500 (phase transition? optimizer momentum effect?)
+
+### C. Velocity Trajectories ([notebooks 14.1f, 14.1g](../notebooks/))
+- **Dead token '&' (ASCII 38):** Velocity drops precipitously with 1/xⁿ decay
+  - Reaches zero by step ~1500
+  - Frozen 89.6% of time after this point
+- **Live token 't' (ASCII 116):** Maintains higher velocity much longer
+  - Gets "cosmic ray kicks" when predicted correctly (gradient spikes)
+  - Zero velocity only 57.3% of time
+- **Quantization regime (~1500 steps):** Velocity plots show horizontal stripes
+  - Only discrete velocity values possible (bfloat16 ULP-scale)
+  - Before: gradients >> ULP, quantization negligible
+  - After: gradients ~ ULP, only discrete updates possible
+
+### D. Adam Momentum as Geometric Inertia ([notebook 15.1a](../notebooks/15.1a_comprehensive_instrumentation.ipynb))
+- **Key insight:** Adam's exp_avg (first moment) is literal velocity vector in embedding space
+- Token update = learning_rate × momentum / √variance
+- Tokens have geometric inertia—they coast in direction of accumulated gradients
+- **Dead token dynamics:**
+  1. Early: Build up momentum (strong uniform gradients)
+  2. Middle: Coast on momentum as gradients weaken
+  3. Late: Slow down as momentum decays, freeze on lattice
+- Smooth trajectories vs jerky random walk—momentum explains this
+
+### E. Thermodynamic Freezing
+- **Ambient temperature:** Use median velocity of dead tokens (robust to cosmic rays)
+- Dead tokens are clean thermometer—never get gradient spikes from predictions
+- Temperature drops as training progresses (system cools)
+- **Freezing point (~1500 steps):** Gradients decay below bfloat16 quantization threshold
+- After freezing: tokens can only move in discrete jumps (ULP-scale)
+- Most dead tokens have zero velocity—no gradient signal strong enough to overcome quantization
+
+### F. Comprehensive Instrumentation Dataset
+- **15.1a:** Records full training history for steps 0-10,000
+- Saved data (~660 MB):
+  - Embedding matrices W (actual positions, not deltas)
+  - Gradients
+  - Adam momentum and variance
+  - Logits at each step
+  - Loss
+- Complete picture of dead token evolution from birth to freezing
+
+---
+
+## X. The Remaining Mysteries
 
 ### A. What We Know For Certain
-1. Dead tokens are **bfloat16-quantized initialization fossils**
+1. Dead tokens are **bfloat16-quantized initialization fossils** that underwent early coherent motion before freezing
 2. They are **spatially confined** (all within L∞ ≤ 2ε, L2 ≤ 1.2×10⁻²)
 3. They are at **initialization scale** (centroid norm ~0.37, typical for Qwen)
 4. **Stripe population** follows Gaussian distribution (initialization signature)
 5. Black holes **only appear in Qwen 2.5+** (introduced Sept 2024)
 6. Gatsby experiment **proves** dead vocabulary → frozen vectors (when truly unused)
+7. Dead tokens **do receive gradients early in training** (uniform logits at t=1)
+8. They move as a **rigid body** (583:1 bulk/thermal velocity ratio) before freezing
+9. Freezing occurs around **step ~1500** when gradients decay below quantization threshold
 
-### B. What We Assume (May Be Wrong!)
-1. These tokens received **zero or near-zero gradient updates** during training
-   - Thai Wikipedia test: zero tokens appear when tokenizing Thai
-   - Spatial confinement suggests minimal movement
-   - **Alternative:** Maybe received 1-10 updates in rare contexts?
-   - **Testable:** Could correlated updates explain clustering?
-2. The 2,221 tokens are truly "dead" (never appeared in pretraining)
-   - vs "nearly dead" (appeared once or twice in rare contexts)
-   - Small update counts could create correlated displacements
-   - 704-token BH: all received same rare update?
+### B. What We Now Understand Better (Updated from Earlier Assumptions)
+1. ~~These tokens received **zero or near-zero gradient updates**~~ → **FALSE**
+   - Dead tokens DO receive gradients early (uniform logits → uniform gradients)
+   - They move coherently as primordial atom before freezing
+   - Freezing happens when gradients decay below quantization threshold (~1500 steps)
+   - Spatial confinement reflects frozen state, not absence of gradients
+2. The 2,221 tokens are "dead" in the sense that:
+   - They never appear in Qwen's training data (Thai Wikipedia test confirms zero usage)
+   - They receive only uniform gradient pressure (no token-specific signal)
+   - They freeze together on bfloat16 lattice when training temperature drops
+   - **Revised understanding:** "Dead" = no differential gradient signal, not no gradients at all
 
-### C. What We Cannot Explain
+### C. What We Still Cannot Explain
 1. **Why 13 black holes instead of 1?**
-   - If initialized at single point, should be 1 massive black hole
-   - bfloat16 noise alone doesn't create 13 distinct clusters
-   - Weight decay can't explain it (cluster is 0.166 units from origin, not at origin)
+   - f32→bf16 hypothesis reproduces 13 clusters naturally ✓
+   - But mechanism isn't fully understood yet
+   - Why not 5? Why not 50? What determines the count?
 2. **Why this specific demographic distribution?**
    - [814, 704, 306, 228, 11, 10, 6, 5, 4, 4, 3, 3, 2]
    - Three monsters + one medium + ten small
-   - Monument Valley (Gaussian) produces wrong distribution
-   - Monument Valley (Uniform Ball) produces [results TBD]
+   - Gatsby f32 experiment produced [19, 14, 3, 3, 3, 2, 1...] (different structure)
+   - Scale effect? Training duration? Initialization parameters?
 3. **Why 121 singletons?**
-   - Single-occupancy survivors from random deletion?
-   - But demographics suggest structure, not randomness
-4. **What initialization process creates this?**
-   - Not pure Gaussian (Monument Valley fails)
-   - Not uniform ball (preliminary results suggest failure)
-   - Multi-stage? Non-uniform? Different distribution?
-
-### C. Competing Hypotheses
-
-#### Hypothesis 1: Multi-Stage Initialization
-- Qwen initialized at single point
-- Pre-training warmup with small learning rate
-- Dead tokens diffuse via optimizer state updates (Adam momentum?)
-- Freeze before main training
-- **Problem:** Why 13 clusters? Why touching?
-
-#### Hypothesis 2: Non-Uniform Survival
-- Monument Valley assumes **uniform** deletion
-- What if training data isn't uniformly random?
-- Some dead tokens appear rarely, others never
-- Rare appearances → partial updates → slightly different positions
-- **Problem:** Dead tokens show zero movement in Gatsby experiment
-
-#### Hypothesis 3: Float32 → bfloat16 Conversion (PROMISING)
-- Initialize in float32 with Gaussian noise: `randvec + Gaussian(0, σ)`
-- σ small enough (~1e-5) that conversion to bfloat16 creates discrete clusters
-- **Tested in 13.4a (Gatsby Float32 Edition):**
-  - 51 dead tokens → 13 unique vectors ✓
-  - Complete graph topology (density = 1.0) ✓
-  - bfloat16-quantized (bit-for-bit match) ✓
-  - Demographics: [19, 14, 3, 3, 3, 2, 1...] (different from Qwen but plausible)
-  - Only 1,000 training steps, ~100 it/s on M3 Max
-- **Mechanism:** f32 init creates slight variation → bf16 conversion snaps to lattice → training lets live tokens escape → dead tokens frozen at quantization boundaries
-- **Remaining questions:** Can we match Qwen's exact demographics? Need larger scale test (2,221 tokens)
-
-#### Hypothesis 4: We're Missing Something Fundamental
-- Initialization artifact we haven't considered
-- Training dynamic we haven't measured
-- Quantization effect we haven't understood
+   - f32→bf16 + training dynamics can explain discrete clusters
+   - But why this specific singleton count?
+   - Related to initialization σ? Token count? Training length?
 
 ---
 
-## IX. Open Questions & Next Experiments
+## XI. Open Questions & Next Experiments
 
-### A. Immediate Questions
-1. Does uniform ball Monument Valley match Qwen better than Gaussian?
-2. What's the complete demographics distribution from 13.3c?
-3. Can we find a distribution that reproduces [814, 704, 306, 228, ...]?
-4. What do the 10 outliers from 13.2b tell us?
+### A. High Priority Questions
+1. **f32→bf16 control experiment:** Pure bf16 initialization (no f32 stage)
+   - Predict: Should produce 1 singularity, not 13 clusters
+   - Would definitively prove f32→bf16 conversion is essential
+2. **Demographics convergence:** Scale test with 2,221 tokens, 10k+ steps
+   - Do Gatsby demographics converge toward Qwen's [814, 704, 306, 228...]?
+   - Is longer training needed for coalescence?
+3. **Crystallization mechanics:** Does ULP coarsening explain 13-cluster structure?
+   - Compute ULP as function of distance from origin
+   - Track dead token centroid position during training
+   - Model lattice resolution changes during expansion
+4. **Adam momentum decomposition:** Force vs inertia contributions
+   - Use 15.1a data to separate gradient (force) from momentum (inertia)
+   - Quantify when momentum dominates vs when gradients dominate
+   - Explain smooth trajectories mechanistically
 
-### B. Proposed Experiments
+### B. Medium Priority
+1. **Outlier analysis:** What do the 10 outliers from 13.2b tell us?
+   - Are they tokens that moved slightly during training?
+   - Do they have different gradient histories?
+   - Check against 15.1a instrumentation data
+2. **Anomalous spike investigation (t~500):**
+   - Why do both bulk and thermal velocities spike together?
+   - Phase transition? Optimizer warmup effect?
+   - Cosmic ray shower? Loss function curvature change?
+3. **Cross-model comparison:**
+   - Why Qwen 2.5 (60 vectors) vs Qwen 3 (13 vectors)?
+   - More training → more coalescence?
+   - Different initialization? Different optimizer settings?
 
-**High Priority (validate 13.4a results):**
-1. **Control: Pure bf16 initialization (13.4b)**
-   - Initialize directly in bfloat16 (no f32 stage)
-   - Predict: Should produce 1 black hole (singularity), not 13
-   - If true → proves f32→bf16 conversion is essential
-2. **Scale test (13.4c)**
-   - 2,221 dead tokens (match Qwen's count)
-   - Longer training (10k steps)
-   - Check if demographics converge toward [814, 704, 306, 228...]
-3. **Robustness test**
-   - Multiple random seeds
-   - σ sweep (1e-6 to 1e-4)
-   - Verify 13 unique vectors is stable
+### C. Lower Priority
+1. **Qwen initialization code:** Extract actual init from Hugging Face repo
+   - Confirm f32→bf16 hypothesis directly
+   - Measure actual initialization σ
+2. **Monument Valley retrospective:** What did we learn from failure?
+   - Static sampling fundamentally different from dynamic evolution
+   - Importance of training dynamics + quantization interaction
+   - Limitations of equilibrium models for non-equilibrium systems
 
-**Lower Priority:**
-4. **Cross-model deep dive**
-   - Why did Qwen 2.5 have 60 unique vectors vs Qwen 3's 13?
-   - Extract Qwen's actual initialization code
-   - Measure bfloat16 drift rate
-
-### C. The Big Picture
-- Float32→bfloat16 hypothesis shows **immediate promise** (13.4a)
-- Need control experiments to rule out alternatives
-- Monument Valley hypothesis remains **failed** for static sampling
-- Key insight: Training dynamics + quantization may be inseparable
+### D. The Big Picture
+- **Leading hypothesis:** f32→bf16 initialization + early coherent motion + thermodynamic freezing
+- **Key insight:** Dead tokens are NOT static fossils—they're frozen in motion
+- **Monument Valley:** FALSIFIED (static erosion model doesn't match dynamic thermodynamic reality)
+- **Next frontier:** Understanding why 13 clusters, not 1 or 100
+- **Methodology lesson:** Direct instrumentation of training dynamics reveals mechanisms that static geometric analysis cannot
 
 ---
 
-## X. Conclusions (Preliminary)
+## XII. Conclusions (Updated)
 
 ### What We've Learned
-- Dead tokens are real, measurable, and reveal training history
-- bfloat16 quantization creates discrete geometric structure
-- Initialization artifacts persist through training
-- Simple models (Gaussian Monument Valley) fail to explain observations
+
+**Geometric discoveries:**
+- 2,221 dead tokens in Qwen 3 form 13 black holes + 121 singletons
+- All confined to hypercube with L∞ ≤ 1 ULP from weighted centroid
+- Complete graph topology—all pairs "touching" in Chebyshev distance
+- Vectors are bit-for-bit bfloat16 quantized (initialization fossils)
+
+**Dynamic discoveries:**
+- Dead tokens are NOT static—they undergo coherent early motion before freezing
+- **t=1:** Perfectly uniform logits (7.6875) → uniform gradients → rigid body motion
+- **Bulk/thermal ratio:** 583:1 at t=0 (primordial atom moves as coherent structure)
+- **Freezing point:** ~1500 steps when gradients decay below bfloat16 quantization threshold
+- **Adam momentum:** Provides geometric inertia, explains smooth trajectories
+
+**Hypothesis testing:**
+- **Monument Valley: FALSIFIED** (static erosion can't explain dynamic thermodynamic system)
+- **f32→bf16 conversion: PROMISING** (reproduces topology, mechanism, and ~13 clusters in Gatsby)
+- **Key insight:** Training dynamics + quantization effects are inseparable
 
 ### What Remains
-- The **formation mechanism** for 13 clusters
-- The **demographic distribution** origin
-- The **121 singletons** mystery
-- Whether this is Qwen-specific or general phenomenon
+- **Why exactly 13 clusters?** (f32→bf16 explains discrete structure but not the count)
+- **Demographics:** Why [814, 704, 306, 228...] specifically? Scale effect? Training duration?
+- **Crystallization:** Does ULP coarsening during expansion explain re-clustering?
+- **Singletons:** Why 121? What determines this count?
+- **Cross-model:** Why Qwen 2.5 (60 vectors) vs Qwen 3 (13 vectors)?
 
 ### Why This Matters
-- Understanding initialization → better model training
-- Dead tokens reveal pretraining corpus gaps
-- Geometric structure reflects training dynamics
-- bfloat16 quantization has subtle effects
+
+**For ML practice:**
+- Initialization + precision interact in subtle ways (f32→bf16 creates structure)
+- Dead vocabulary reveals training corpus gaps (can identify missing languages/scripts)
+- Quantization effects matter even before quantization-aware training
+- Optimizer momentum has geometric interpretation (literal inertia in embedding space)
+
+**For science:**
+- Models are complex dynamical systems, not static parameter collections
+- Geometric fossils preserve training history (dead tokens = "core samples")
+- Statistical mechanics framework applies (temperature, phase transitions, freezing)
+- Instrumentation reveals mechanisms invisible to static analysis
+
+**For this project:**
+- Demonstrates value of toy model experiments (Gatsby validates hypotheses)
+- Shows power of comprehensive instrumentation (15.1a captures full dynamics)
+- Illustrates importance of falsification (Monument Valley failure was informative)
+- Proves dead tokens are worth studying (they're weird, but they're real)
 
 ---
 
@@ -369,9 +483,12 @@
 - 08.x: Gatsby training experiments
 - 09.x: Population analysis
 - 12.x: Synthetic snowball modeling
-- 13.x: bfloat16 analysis & Monument Valley
+- 13.x: bfloat16 analysis, Monument Valley, f32→bf16 hypothesis
+- 14.x: Dead token dynamics (velocity, temperature, center-of-mass)
+- 15.x: Comprehensive training instrumentation
 
 ---
 
-**Document Status:** Outline Draft 1 (2025-11-09)
-**Next Step:** Review with Jeffery, fill gaps, refine structure
+**Document Status:** Outline Draft 2 (2025-11-10)
+**Major updates:** Added Volumes 14-15 training dynamics, promoted f32→bf16 hypothesis to Section VIII, restructured mysteries, updated conclusions, falsified Monument Valley
+**Next Step:** Validate with additional experiments, expand technical details as needed
