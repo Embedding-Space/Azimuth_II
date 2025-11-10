@@ -14,7 +14,7 @@
 
 ## II. Discovery & Initial Characterization
 
-### A. The Overdensity ([notebook 01.2d](../notebooks/01.2d_norms_histogram_spike.ipynb))
+### A. The Overdensity ([notebook 01.2d](../notebooks/01.2d_investigate_spike.ipynb))
 - L2 norm histogram reveals "the spike" at ~0.27
 - 1,487 rare/undertrained tokens
 - Leading edge: 814-token degenerate cluster at norm 0.371
@@ -198,11 +198,18 @@
 - **Problem:** "Worst possible outcome" - everything works, nothing is ruled out
 
 ### D. Uniform Ball Monument Valley ([notebook 13.3c](../notebooks/13.3c_monument_valley_uniform_ball.ipynb))
-- Radius sweep: 1×10⁻⁷ to 1×10⁻⁶ (10 samples, 10 trials each)
+- Radius sweep: 1×10⁻⁷ to 1×10⁻⁶ (100 samples, 10 trials each)
 - **Error bars:** Laser-beam thin (n=10 but extremely stable statistics)
 - **Interpretation:** Law of large numbers on 151,936→2,221 sampling
-- **Implication:** No wiggle room - if uniform ball at radius R produces X black holes, that's deterministic
-- [Need results: does uniform ball match better than Gaussian?]
+- **Results:**
+  - Best match R = 1.42×10⁻⁷: 15.3±1.4 BH (need 13), largest = 1121±17 (need 814)
+  - Demographics: [1099, 660, 142, 117...] vs Qwen's [814, 704, 306, 228...]
+  - **FAILURE:** Cannot reproduce Qwen's structure
+- **Qualitative difference from Gaussian:**
+  - Gaussian shows peaked behavior (BH count rises then falls)
+  - Uniform ball shows smooth monotonic curves (no characteristic scale)
+  - Both fail, but for different reasons
+- **Conclusion:** Monument Valley hypothesis fails for both Gaussian AND uniform ball distributions
 
 ---
 
@@ -261,11 +268,17 @@
 - Rare appearances → partial updates → slightly different positions
 - **Problem:** Dead tokens show zero movement in Gatsby experiment
 
-#### Hypothesis 3: Float32 → bfloat16 Conversion
-- Initialize in float32 with Gaussian noise for numerical stability
-- σ small enough that conversion to bfloat16 creates discrete clusters
-- **Jeffery's idea from this session**
-- **Problem:** Still need to match demographics
+#### Hypothesis 3: Float32 → bfloat16 Conversion (PROMISING)
+- Initialize in float32 with Gaussian noise: `randvec + Gaussian(0, σ)`
+- σ small enough (~1e-5) that conversion to bfloat16 creates discrete clusters
+- **Tested in 13.4a (Gatsby Float32 Edition):**
+  - 51 dead tokens → 13 unique vectors ✓
+  - Complete graph topology (density = 1.0) ✓
+  - bfloat16-quantized (bit-for-bit match) ✓
+  - Demographics: [19, 14, 3, 3, 3, 2, 1...] (different from Qwen but plausible)
+  - Only 1,000 training steps, ~100 it/s on M3 Max
+- **Mechanism:** f32 init creates slight variation → bf16 conversion snaps to lattice → training lets live tokens escape → dead tokens frozen at quantization boundaries
+- **Remaining questions:** Can we match Qwen's exact demographics? Need larger scale test (2,221 tokens)
 
 #### Hypothesis 4: We're Missing Something Fundamental
 - Initialization artifact we haven't considered
@@ -283,28 +296,32 @@
 4. What do the 10 outliers from 13.2b tell us?
 
 ### B. Proposed Experiments
-1. **Multi-stage Monument Valley**
-   - Initialize 151,936 at one point
-   - Apply small diffusion (optimizer momentum simulation)
-   - Quantize to bfloat16
-   - Sample survivors
-2. **Non-uniform survival**
-   - Weight survival probability by token rarity in pretraining corpus
-   - Thai tokens → 0% survival, rare CJK → 5%, etc.
-3. **Float32→bfloat16 initialization test**
-   - Sample in float32 with very small σ
-   - Convert to bfloat16
-   - Measure cluster formation
+
+**High Priority (validate 13.4a results):**
+1. **Control: Pure bf16 initialization (13.4b)**
+   - Initialize directly in bfloat16 (no f32 stage)
+   - Predict: Should produce 1 black hole (singularity), not 13
+   - If true → proves f32→bf16 conversion is essential
+2. **Scale test (13.4c)**
+   - 2,221 dead tokens (match Qwen's count)
+   - Longer training (10k steps)
+   - Check if demographics converge toward [814, 704, 306, 228...]
+3. **Robustness test**
+   - Multiple random seeds
+   - σ sweep (1e-6 to 1e-4)
+   - Verify 13 unique vectors is stable
+
+**Lower Priority:**
 4. **Cross-model deep dive**
    - Why did Qwen 2.5 have 60 unique vectors vs Qwen 3's 13?
-   - Analyze training iteration counts
+   - Extract Qwen's actual initialization code
    - Measure bfloat16 drift rate
 
 ### C. The Big Picture
-- Monument Valley is a **strong constraint**
-- Error bars are tight → predictions are deterministic
-- If no simple distribution works, initialization must be complex
-- Or our model of the process is wrong
+- Float32→bfloat16 hypothesis shows **immediate promise** (13.4a)
+- Need control experiments to rule out alternatives
+- Monument Valley hypothesis remains **failed** for static sampling
+- Key insight: Training dynamics + quantization may be inseparable
 
 ---
 
