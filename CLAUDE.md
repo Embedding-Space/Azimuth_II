@@ -237,6 +237,12 @@ Example: Sky maps from saved spherical coordinates, histogram analysis of saved 
 
 ---
 
+## Lab Notes
+
+Over the course of our tinkering a sort of story has emerged. We're trying to capture that narrative arc in the file docs/dead_tokens_outline.md. (A document written entirely, by the way, by you yourself.) Help keep this document alive and up to date, please.
+
+@docs/dead_tokens_outline.md
+
 ## Dependencies
 
 **This is a uv project.** Package management and execution:
