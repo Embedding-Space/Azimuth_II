@@ -100,6 +100,45 @@ import torch
 
 Use **42** consistently for all stochastic operations (sampling, UMAP, random initialization). Reproducibility matters.
 
+### Device Detection & Hardware Acceleration
+
+**Be a good citizen:** Always detect and use available hardware acceleration.
+
+Add a device detection cell early in every notebook (after imports, before loading data):
+
+```python
+# Detect available device
+if torch.cuda.is_available():
+    device = 'cuda'
+elif torch.backends.mps.is_available():
+    device = 'mps'
+else:
+    device = 'cpu'
+
+print(f"Using device: {device}")
+```
+
+**Explicit tensor placement:** Always be clear about which device tensors live on:
+
+```python
+# Load to CPU first (safetensors always loads to CPU)
+W = load_file(tensor_path)["W"]
+
+# Convert and move to device explicitly
+W = W.to(torch.float32).to(device)
+
+# For computations, keep intermediate results on device
+distances = torch.cdist(vectors_on_device, vectors_on_device)
+
+# Move back to CPU only when needed for visualization/saving
+distances_cpu = distances.cpu()
+```
+
+**Memory management:**
+- Use `torch.no_grad()` for inference/analysis (prevents gradient tracking)
+- Clear cache when needed: `torch.cuda.empty_cache()` or `torch.mps.empty_cache()`
+- For chunked processing, keep chunks on device but results can accumulate on CPU if needed
+
 ### Voice
 
 Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wants something different, he'll say so.
