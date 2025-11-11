@@ -243,16 +243,21 @@
    - Scale effect? (51 vs 2,221 tokens)
    - Training duration? (1,000 vs millions of steps)
    - Initialization parameters?
-2. **Control experiment needed:** Pure bf16 initialization (no f32 stage)
-   - Predict: Should produce 1 massive singularity, not 13 clusters
-   - Would prove f32→bf16 conversion is essential
+2. **Control experiment: COMPLETED** ([notebooks 15.1b, 15.2c](../notebooks/))
+   - Pure bf16 initialization (no f32 stage)
+   - **Results (64 runs, Cohen's d = 3.79):**
+     - Pure bf16: 2.2 ± 1.1 unique vectors (near-singularity) ✓
+     - f32→bf16: 21.4 ± 7.1 unique vectors (distributed structure) ✓
+     - Massive separation (19.2 vectors, d = 3.79)
+   - **Conclusion:** f32→bf16 conversion is NECESSARY precondition (validated)
 3. **Scale test:** 2,221 dead tokens, 10k steps
    - Do demographics converge toward Qwen's distribution?
    - Does longer training cause further coalescence?
 
-### E. Why This Hypothesis Is Promising
+### E. Why This Hypothesis Is VALIDATED
 - **Mechanistic:** Explains both clustering and topology from first principles
 - **Testable:** Makes falsifiable predictions (bf16-only control should fail)
+- **Experimentally validated:** Control experiment (n=64) shows pure bf16 collapses while f32 maintains structure (d=3.79)
 - **Generalizable:** Applies to any model with f32 init + bf16 training
 - **Parsimonious:** No ad-hoc parameters or multi-stage processes needed
 
@@ -316,6 +321,16 @@
   - Loss
 - Complete picture of dead token evolution from birth to freezing
 
+### G. f32 vs bf16 Control Experiment ([notebooks 15.1b, 15.2c](../notebooks/))
+- **Test 001 + Test 002:** 64 total runs (32 f32→bf16, 32 pure bf16), seeds 1601-1616
+- Each run: 1,000 steps, embeddings-only recording (~16 MB/run)
+- **f32→bf16 trajectory:** Starts 43 unique → gradual decline to 21.4 ± 7.1 at t=1000
+- **Pure bf16 trajectory:** Starts 17 unique → crashes to 2.2 ± 1.1 by t=100, then flat
+- **Cohen's d = 3.79** (separation by ~4 standard deviations)
+- **Interpretation:** f32 preserves continuous variation that survives quantization
+- Pure bf16 at σ=1e-5 collapses immediately (sub-ULP noise rounds to zero)
+- **Verdict:** f32 initialization is NECESSARY for distributed structure
+
 ---
 
 ## X. The Remaining Mysteries
@@ -363,9 +378,10 @@
 ## XI. Open Questions & Next Experiments
 
 ### A. High Priority Questions
-1. **f32→bf16 control experiment:** Pure bf16 initialization (no f32 stage)
-   - Predict: Should produce 1 singularity, not 13 clusters
-   - Would definitively prove f32→bf16 conversion is essential
+1. ~~**f32→bf16 control experiment:** Pure bf16 initialization~~ → **COMPLETED (15.2c)**
+   - Result: Hypothesis VALIDATED (Cohen's d = 3.79)
+   - f32 initialization is necessary for distributed structure
+   - Pure bf16 collapses to singularity (~2.2 unique vectors vs f32's ~21.4)
 2. **Demographics convergence:** Scale test with 2,221 tokens, 10k+ steps
    - Do Gatsby demographics converge toward Qwen's [814, 704, 306, 228...]?
    - Is longer training needed for coalescence?
@@ -429,8 +445,9 @@
 
 **Hypothesis testing:**
 - **Monument Valley: FALSIFIED** (static erosion can't explain dynamic thermodynamic system)
-- **f32→bf16 conversion: PROMISING** (reproduces topology, mechanism, and ~13 clusters in Gatsby)
+- **f32→bf16 conversion: VALIDATED** (control experiment n=64, Cohen's d=3.79)
 - **Key insight:** Training dynamics + quantization effects are inseparable
+- **Control experiment:** Pure bf16 collapses to ~2 vectors; f32 maintains ~21 vectors (necessary precondition confirmed)
 
 ### What Remains
 - **Why exactly 13 clusters?** (f32→bf16 explains discrete structure but not the count)
@@ -486,9 +503,14 @@
 - 13.x: bfloat16 analysis, Monument Valley, f32→bf16 hypothesis
 - 14.x: Dead token dynamics (velocity, temperature, center-of-mass)
 - 15.x: Comprehensive training instrumentation
+  - 15.1a: f32→bf16 instrumented training (full history)
+  - 15.1b: Pure bf16 control experiment
+  - 15.2a: Initial f32 vs bf16 comparison (single runs)
+  - 15.2b: Evaporation vs coalescence analysis
+  - 15.2c: Bulk experiment analysis (64 runs, hypothesis validation)
 
 ---
 
-**Document Status:** Outline Draft 2 (2025-11-10)
-**Major updates:** Added Volumes 14-15 training dynamics, promoted f32→bf16 hypothesis to Section VIII, restructured mysteries, updated conclusions, falsified Monument Valley
-**Next Step:** Validate with additional experiments, expand technical details as needed
+**Document Status:** Outline Draft 3 (2025-11-10)
+**Major updates:** f32→bf16 hypothesis VALIDATED via 64-run control experiment (Cohen's d=3.79); pure bf16 collapses to singularity while f32 maintains distributed structure
+**Next Step:** Qwen 2.5 3B analysis, demographics convergence studies
