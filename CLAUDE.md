@@ -125,7 +125,7 @@ Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wan
 
 ### Tensors (safetensors format)
 
-- Use descriptive names: `gamma_centered_qwen_3_4b_instruct_2507.safetensors`
+- Use descriptive names that include the notebook that generated the tensors file: `V.Nx_gamma_centered_qwen_3_4b_instruct_2507.safetensors`
 - Include model name if doing comparative analysis
 - Save to `data/tensors/`
 - Store metadata (parameters, notebook that generated it) when reproduction requires it, but don't be redundant
@@ -177,7 +177,7 @@ Commit notebooks **with outputs included**. This provides:
 
 - **Default library:** matplotlib (fast, reliable)
 - **3D interactive only:** Use Plotly when 3D interactivity is essential
-- **Resolution:** 100 DPI default (dial up if needed)
+- **Resolution:** 200 DPI default (looks nicer on Retina screens)
 - **Display:** Show inline in Jupyter. Only save to `data/results/` if truly special.
 - **Colormap:** `'inferno'` as default, but **always make it a settable parameter**
 - **No-data color:** Black
