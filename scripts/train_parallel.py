@@ -33,9 +33,9 @@ N_HEAD = 2                 # Attention heads
 MAX_SEQ_LEN = 128          # Context window
 
 # Training
-BATCH_SIZE = 64            # Per-device batch size
+BATCH_SIZE = 512           # Per-device batch size
 GRADIENT_ACCUMULATION = 1  # Effective batch = BATCH_SIZE × this
-NUM_TRAIN_STEPS = 10000    # Total training steps
+NUM_TRAIN_STEPS = 100000   # Total training steps
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 0.01
 
@@ -43,7 +43,7 @@ WEIGHT_DECAY = 0.01
 INIT_MODE = "qwen"         # "normal" or "qwen"
 
 # Checkpointing
-SAVE_EVERY_N_STEPS = 100   # Snapshot frequency
+SAVE_EVERY_N_STEPS = 1000  # Snapshot frequency
 
 # Data loading
 NUM_WORKERS = 0            # MUST be 0 for GPU dataset
@@ -96,19 +96,19 @@ class EmbeddingSnapshotCallback(TrainerCallback):
         step = state.global_step
 
         # Store in memory
-        self.embedding_history[step] = model.transformer.wte.weight.data.clone().cpu()
+        self.embedding_history[step] = model.transformer.wte.weight.data.clone()
 
         # Save to disk periodically
         should_save = (step % self.save_every_n == 0) or (step == args.max_steps)
         if should_save:
             save_file(
-                {'embedding_history': self.embedding_history[:step+1]},
+                {'embedding_history': self.embedding_history[:step+1].cpu()},
                 self.output_path
             )
 
-        # Print every 100 steps
+        # Print every 1000 steps
         self.steps_since_print += 1
-        if step % 100 == 0 and step > 0:
+        if step % 1000 == 0 and step > 0:
             elapsed = time.time() - self.last_time
             throughput = self.steps_since_print / elapsed
             vector_steps_per_sec = throughput * VOCAB_SIZE
@@ -198,7 +198,7 @@ def main():
         print(f"Qwen initialization (singular unit vector)")
         with torch.no_grad():
             random_vector = torch.randn(HIDDEN_DIM, device=device)
-            random_vector = random_vector / random_vector.norm()
+            # random_vector = random_vector / random_vector.norm()
             model.transformer.wte.weight[:] = random_vector
         print(f"  All {VOCAB_SIZE} tokens → unit vector\n")
     else:
@@ -207,9 +207,10 @@ def main():
     # Allocate embedding history
     embedding_history = torch.zeros(
         (args.steps + 1, VOCAB_SIZE, HIDDEN_DIM),
-        dtype=torch.bfloat16
+        dtype=torch.bfloat16,
+        device=device
     )
-    embedding_history[0] = model.transformer.wte.weight.data.clone().cpu()
+    embedding_history[0] = model.transformer.wte.weight.data.clone()
 
     print(f"Embedding history: {embedding_history.shape} ({embedding_history.numel() * embedding_history.element_size() / 1e6:.1f} MB)\n")
 
