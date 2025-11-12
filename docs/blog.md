@@ -20,3 +20,4 @@
 
 ## Exploring the Overdensity
 
+[Just what ARE these tokens? Turns out they're mostly Thai for some reason (1.7a) and in fact there's more Thai tokens in the cluster than in the rest of the vocabulary put together (1.7b). Does this mean Qwen 3 4B just sucks at Thai? No, its tokenizer doesn't output any of these tokens (1.8b)!]
