@@ -4,5 +4,6 @@ docs/2505.09388v1.pdf
 notebooks/training_output/
 .venv/
 data/
+!blog/data/
 **/*.safetensors
 **/*.h5
