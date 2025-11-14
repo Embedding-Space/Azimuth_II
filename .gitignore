@@ -4,6 +4,10 @@ docs/2505.09388v1.pdf
 notebooks/training_output/
 .venv/
 data/
-!blog/data/
+!blog/data/1.8a_thai_wiki_corpus/*.json
+!blog/data/1.8a_thai_wiki_page_ids.txt
 **/*.safetensors
 **/*.h5
+**/*.csv
+.vscode/
+blog/tensors/Lil_Gatsby/checkpoint-*/

@@ -21,6 +21,12 @@ wheels = [
 ]
 
 [[package]]
+name = "alphabet-detector"
+version = "0.0.7"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f8/89/c9ab40530fb9142890a79bf39b6f2ee47c311729358794719acd15974e68/alphabet-detector-0.0.7.tar.gz", hash = "sha256:e30f3d6a05250a097c59095a5c269810bcaa09c414eaf85629753da788129ea4", size = 1610, upload-time = "2017-05-20T02:25:46.15Z" }
+
+[[package]]
 name = "anyio"
 version = "4.11.0"
 source = { registry = "https://pypi.org/simple" }
@@ -122,6 +128,7 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "accelerate" },
+    { name = "alphabet-detector" },
     { name = "h5py" },
     { name = "jupyter" },
     { name = "matplotlib" },
@@ -138,6 +145,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "accelerate", specifier = ">=1.11.0" },
+    { name = "alphabet-detector", specifier = ">=0.0.7" },
     { name = "h5py", specifier = ">=3.15.1" },
     { name = "jupyter", specifier = ">=1.1.1" },
     { name = "matplotlib", specifier = ">=3.10.7" },

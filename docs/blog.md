@@ -16,8 +16,18 @@
 
 ## Is This a Problem? A Digression on Decoding
 
-[In here we talk about how decoding works, and distinguishability through cosine similarity and logit scoring. The cluster tokens got the EXACT SAME logit scores (1.7c). So what, lots of tokens do in that middle orthogonal band. No really, these are indistinguishable even if you look directly at them (1.7e, 1.7f).]
+[In here we talk about how decoding works, and distinguishability through cosine similarity and logit scoring. The cluster tokens got the EXACT SAME logit scores (1.7c). So what, lots of tokens do in that middle orthogonal band. No really, these are indistinguishable even if you look directly at them (1.7e, 1.7f). This may just be a footnote, depends on how deep I want to get in to how decoding works.]
 
 ## Exploring the Overdensity
 
 [Just what ARE these tokens? Turns out they're mostly Thai for some reason (1.7a) and in fact there's more Thai tokens in the cluster than in the rest of the vocabulary put together (1.7b). Does this mean Qwen 3 4B just sucks at Thai? No, its tokenizer doesn't output any of these tokens (1.8b)!]
+
+[In investigating the tokenizer we discover that it only has 151,669 tokens it can output while the matrix has 151,936. These 267 literally-cannot-be-tokenized tokens are all part of the cluster.]
+
+[Now we can form a hypothesis: These tokens are ones that never got up3dates during training. They're inert.]
+
+[But then why would they all be close together?]
+
+[Extended hypothesis: All the tokens in the vocabulary were initialized to this one point and these are the tokens that got left behind. Question: Are they literally all at the same point? Let's go look. NO! They are NOT all at the same point, nor are most of them at the same point. Instead there are 13 distinct points where 2 or more tokens live at the same time. (1.11a)]
+
+[Let's look at this. (1.11c) Two points wha? bfloat16 degeneration. New hypothesis: They're not all at the same point, but they're so close together that they can only get closer by jumping to the next lattice cell.]

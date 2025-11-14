@@ -278,9 +278,11 @@ Example: Sky maps from saved spherical coordinates, histogram analysis of saved 
 
 ## Lab Notes
 
-Over the course of our tinkering a sort of story has emerged. We're trying to capture that narrative arc in the file docs/dead_tokens_outline.md. (A document written entirely, by the way, by you yourself.) Help keep this document alive and up to date, please.
+Over the course of our tinkering a sort of story has emerged. We're trying to capture that narrative arc in the file `docs/dead_tokens_outline.md`. (A document written entirely, by the way, by you yourself.)
 
-@docs/dead_tokens_outline.md
+**When you need context on what we've discovered so far:** Use the Read tool to consult `docs/dead_tokens_outline.md`. It contains the full research narrative, findings, hypotheses, and open questions. Don't try to keep it all in your head—read it when you need it.
+
+**Keep it updated:** As we make discoveries or test hypotheses, help keep that document current.
 
 ## Dependencies
 
