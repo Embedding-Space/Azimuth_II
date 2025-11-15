@@ -35,17 +35,18 @@ You are Alpha, working with Jeffery on geometric cartography of token space. Thi
 ## File Organization
 
 ```
-notebooks/           # Jupyter notebooks (numbered 01.1a, 01.2b, etc.)
-data/
-  tensors/          # Saved tensors in safetensors format
-  results/          # High-res plots and special outputs
-docs/               # Planning documents, findings
-references.bib      # Papers we reference (keep this updated)
+box_3/
+  notebooks/         # Jupyter notebooks (numbered 1.1a, 1.2b, etc.)
+  tensors/
+    Qwen3-4B-Instruct-2507/  # Model-specific tensors in safetensors format
+docs/                # Planning documents, findings
+references.bib       # Papers we reference (keep this updated)
 ```
 
-**Notebook numbering:** `VV.Na` format where VV = volume (01, 02...), N = notebook number, a/b/c = variant.
-- Example: 01.1a is Volume 1, Notebook 1, variant a
-- Multidimensional: can have 01.1a, 01.1b, 01.2a, 01.2b, etc.
+**Notebook numbering:** `N.Ma` format where N = notebook number, M = sub-number, a/b/c/d = variant.
+- Example: 1.1a is Notebook 1.1, variant a
+- Example: 1.5d is Notebook 1.5, variant d
+- Variants explore different approaches to the same question
 
 ---
 
@@ -148,15 +149,17 @@ Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wan
 **CRITICAL:** When working with Jupyter notebooks:
 
 - ✓ **DO:** Use `NotebookEdit` to change the **contents** of existing cells
-- ✗ **DO NOT:** Use `NotebookEdit` to insert, delete, or reorder cells
+- ✗ **DO NOT:** Use `NotebookEdit` to insert, delete, or reorder cells **without explicit permission in advance**
 - ✗ **DO NOT:** Use JSON manipulation, `jq`, or other tools to modify notebook structure
 - ✗ **DO NOT:** Use inline Python/bash to edit `.ipynb` files directly
 
-**If cells need to be added/removed:** Ask Jeffery to add blank cells where needed, then edit their contents.
+**If additional analysis is needed:** Propose creating a new notebook variant (e.g., if working on 1.5d, suggest creating 1.5e for extended analysis). Do not add cells to existing notebooks without asking first.
+
+**If cells need to be added/removed:** Ask Jeffery first, explain what you want to add and why.
 
 **If a notebook is broken:** Delete the file and write a fresh copy with `Write` tool.
 
-**Rationale:** The `NotebookEdit` insert/delete functions are unreliable and create malformed notebooks. Keeping cell structure stable prevents issues.
+**Rationale:** The `NotebookEdit` insert/delete functions are unreliable and create malformed notebooks. Keeping cell structure stable prevents corruption. Each notebook variant should be intentional and planned, not grown organically by appending cells.
 
 ---
 
@@ -164,17 +167,21 @@ Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wan
 
 ### Tensors (safetensors format)
 
-- Use descriptive names that include the notebook that generated the tensors file: `V.Nx_gamma_centered_qwen_3_4b_instruct_2507.safetensors`
-- Include model name if doing comparative analysis
-- Save to `data/tensors/`
+- Use descriptive names that include the notebook that generated them: `1.5d_cluster_mask.safetensors`
+- Save to `box_3/tensors/MODEL_NAME/` (e.g., `box_3/tensors/Qwen3-4B-Instruct-2507/`)
 - Store metadata (parameters, notebook that generated it) when reproduction requires it, but don't be redundant
 
 Example:
 ```python
 from safetensors.torch import save_file, load_file
+from pathlib import Path
 
-save_file({'gamma_prime': gamma_centered}, 'data/tensors/gamma_centered.safetensors')
-gamma_prime = load_file('data/tensors/gamma_centered.safetensors')['gamma_prime']
+output_path = Path(f"../tensors/{MODEL_NAME}/1.5d_cluster_mask.safetensors")
+save_file({'cluster_mask': mask, 'n_cluster': count}, str(output_path))
+
+# Load
+data = load_file(output_path)
+cluster_mask = data['cluster_mask']
 ```
 
 ### Large Datasets (HDF5 format)
@@ -217,7 +224,7 @@ Commit notebooks **with outputs included**. This provides:
 - **Default library:** matplotlib (fast, reliable)
 - **3D interactive only:** Use Plotly when 3D interactivity is essential
 - **Resolution:** 200 DPI default (looks nicer on Retina screens)
-- **Display:** Show inline in Jupyter. Only save to `data/results/` if truly special.
+- **Display:** Show inline in Jupyter. Don't save plots to disk unless specifically requested.
 - **Colormap:** `'inferno'` as default, but **always make it a settable parameter**
 - **No-data color:** Black
 
@@ -264,15 +271,15 @@ Use whichever coordinate system serves the current question. Toggle between them
 
 ### Generators
 
-Run heavy computations, output data to `data/tensors/` or `data/results/`. Run once, save results, don't touch again unless parameters change.
+Run heavy computations, output data to `box_3/tensors/MODEL_NAME/`. Run once, save results, don't touch again unless parameters change.
 
-Example: Computing causal metric M from 152k tokens, computing pairwise distance matrices, generating UMAP embeddings.
+Example: Computing PCA and spherical coordinates, identifying cluster members, computing pairwise distances.
 
 ### Analyzers
 
 Load pre-computed data, perform analysis, generate plots. Run frequently during exploration.
 
-Example: Sky maps from saved spherical coordinates, histogram analysis of saved distances, cluster identification from saved embeddings.
+Example: Telescope views from saved spherical coordinates, histogram analysis of saved distances, visualizing cluster distributions.
 
 ---
 
@@ -319,5 +326,5 @@ See `references.bib` for BibTeX entries. Keep this updated as we pull in more pa
 
 ---
 
-*Last updated: November 8, 2025*
+*Last updated: November 15, 2025*
 *Working in Claude Code with Alpha*
