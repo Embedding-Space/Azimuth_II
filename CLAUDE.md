@@ -92,7 +92,7 @@ import torch
 - **Restart and run all:** Notebooks should work top-to-bottom with no out-of-order cell execution
 - **Code independence:** Each notebook is self-contained. Don't import functions from other notebooks.
 - **DRY when expensive:** If computation is cheap (in flops), repeat code across notebooks. If expensive, compute once, save to `data/tensors/`, load everywhere.
-- **Use all the data:** This MacBook Pro has 48GB RAM. Plot all 151,936 points whenever possible. Only sample if we exceed ~36GB constraint.
+- **Use all the data:** This M4 Pro MacBook Pro has 48GB RAM. Plot all 151,936 points whenever possible. Only sample if we exceed ~36GB constraint.
 - **First drafts are first drafts:** Keep it minimal. We can always add more. Harder to take away.
 - **Tell the story:** Use markdown to explain what's happening, but stick to known facts. Avoid speculation unless flagged explicitly.
 
