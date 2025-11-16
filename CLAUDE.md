@@ -9,7 +9,7 @@ You are Alpha, working with Jeffery on geometric cartography of token space. Thi
 ## Core Philosophy
 
 - Study the unembedding matrix as a fixed catalog of points in 2560D space
-- Work primarily in **γ-space** (gamma space): the natural training representation with Euclidean/Cartesian coordinates
+- Work primarily in **W-space**: the natural training representation with Euclidean/Cartesian coordinates
 - Use the **causal metric** as an optional lens to reveal hidden structure
 - Do cartography: histograms, scatter plots, boring exploratory work before imposing models
 - Think astronomy, not differential geometry—this is a discrete point cloud
@@ -23,12 +23,7 @@ You are Alpha, working with Jeffery on geometric cartography of token space. Thi
 **Model:** Qwen/Qwen3-4B-Instruct-2507 (released 2025, newer than Claude's training cutoff)
 - 151,936 tokens in vocabulary
 - 2,560-dimensional hidden space
-- Unembedding matrix: **γ** (151,936 × 2,560)
-
-**Key transformations:**
-- **γ'** = γ - μ (centered at centroid)
-- **M** = Cov(γ)^(-1) (causal metric tensor, following Park et al. 2024)
-- **z** = √Λ Q^T γ' (causal space coordinates, distances in logometers)
+- Unembedding matrix: **W** (151,936 × 2,560)
 
 ---
 
@@ -43,10 +38,9 @@ docs/                # Planning documents, findings
 references.bib       # Papers we reference (keep this updated)
 ```
 
-**Notebook numbering:** `N.Ma` format where N = notebook number, M = sub-number, a/b/c/d = variant.
-- Example: 1.1a is Notebook 1.1, variant a
-- Example: 1.5d is Notebook 1.5, variant d
-- Variants explore different approaches to the same question
+**Notebook numbering:** `N.Ma` format where N = notebook number, M = sub-number, a/b/c/d = item in series.
+- Example: 1.1a is Notebook 1.1, first in the series
+- Example: 1.5d is Notebook 1.5, fourth in the series
 
 ---
 
@@ -93,7 +87,7 @@ import torch
 - **Restart and run all:** Notebooks should work top-to-bottom with no out-of-order cell execution
 - **Code independence:** Each notebook is self-contained. Don't import functions from other notebooks.
 - **DRY when expensive:** If computation is cheap (in flops), repeat code across notebooks. If expensive, compute once, save to `data/tensors/`, load everywhere.
-- **Use all the data:** This M4 Pro MacBook Pro has 48GB RAM. Plot all 151,936 points whenever possible. Only sample if we exceed ~36GB constraint.
+- **Use all the data:** This M4 Pro MacBook Pro has 48GB RAM. Plot all 151,936 points whenever possible, but try not to allocate more than 24GB memory at one time without getting clearance first.
 - **First drafts are first drafts:** Keep it minimal. We can always add more. Harder to take away.
 - **Tell the story:** Use markdown to explain what's happening, but stick to known facts. Avoid speculation unless flagged explicitly.
 
@@ -226,7 +220,7 @@ Commit notebooks **with outputs included**. This provides:
 - **Resolution:** 200 DPI default (looks nicer on Retina screens)
 - **Display:** Show inline in Jupyter. Don't save plots to disk unless specifically requested.
 - **Colormap:** `'inferno'` as default, but **always make it a settable parameter**
-- **No-data color:** Black
+- **"Naked-eye" plots:** Plots that are intended to be representative of _seeing tokens in space_ should use black as the axes face color. Things that superimpose the axes like gridlines should be light-on-dark. All other plots should be dark-on-paper as usual.
 
 Example:
 ```python
@@ -234,6 +228,7 @@ import matplotlib.pyplot as plt
 
 def plot_sky_map(theta, phi, density, colormap='inferno', dpi=100):
     fig, ax = plt.subplots(figsize=(12, 6), dpi=dpi)
+    ax.set_facecolor('black')
     scatter = ax.scatter(phi, theta, c=density, cmap=colormap, s=1)
     plt.colorbar(scatter)
     plt.show()
@@ -249,21 +244,15 @@ def plot_sky_map(theta, phi, density, colormap='inferno', dpi=100):
 
 ## Coordinate Systems & Units
 
-### Gamma Space (γ)
+### W Space
 
 - Natural training representation: Euclidean coordinates
-- **Units:** "gamma units" (dimensionless, hidden space natural units)
-- Norms cluster around 1—show plenty of significant figures
+- **Units:** "units" (dimensionless, hidden space natural units)
 - This is where the model actually lives
 
-### Causal Space (z)
+### W′ Space (W prime)
 
-- Transform: z = √Λ Q^T γ'
-- Stretches space so variance is normalized and metric becomes identity
-- **Units:** "logometers" (1 unit = 1 log-probability)
-- Reveals hidden geometric structure by making distances comparable
-
-Use whichever coordinate system serves the current question. Toggle between them to find complementary insights.
+- Same as W, but translated. Used for considering token structures from their centroids, for example
 
 ---
 
@@ -297,7 +286,6 @@ Over the course of our tinkering a sort of story has emerged. We're trying to ca
 
 - **Add packages:** `uv add package-name` (NOT `pip install`)
 - **Run scripts:** `uv run python script.py` (NOT plain `python`)
-- **Run notebooks:** `uv run jupyter notebook`
 
 See `pyproject.toml` for canonical versions. Key packages:
 
