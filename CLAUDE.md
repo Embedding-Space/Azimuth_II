@@ -274,9 +274,21 @@ Example: Telescope views from saved spherical coordinates, histogram analysis of
 
 ## Lab Notes
 
+### What We've Discovered So Far
+
+Early exploration of Qwen 3 4B's 151,936-token embedding space revealed an **overdensity**: thousands of tokens clustered far tighter than the rest of the vocabulary. Most turned out to be Thai script—tokens that never appeared during training because the tokenizer couldn't actually produce them, or produced them so rarely they might as well be untrained. These "untrained tokens" stayed frozen near their initialization point while the rest of the vocabulary dispersed during training.
+
+Zooming in, we found something stranger: many of these tokens aren't just *close*—they're **identical**. Bit-for-bit duplicates we call **black holes**: 2,100 tokens collapsing to just 13 unique vectors in Qwen 3 4B (Qwen 2.5 3B shows similar structure: 2,212 tokens → 60 centroids). Around these black holes sit 39 additional singleton vectors, all packed within a ~55-lattice-cell bounding box in mantissa space. Together they form the **spongecrystal**: a fully-connected lattice graph in 2560D space—dense topology occupying vast volume, like a crystalline sponge with more void than structure. Roughly 99.9% of the vocabulary has no lattice neighbors at all.
+
+The **bfloat16 quantization** appears central to understanding token dynamics. Tokens live on a discrete lattice: if a gradient update is smaller than 1 ULP at the current exponent, the token *cannot move* in bfloat16 representation. Our hypothesis: structures form early in training (within 10^N steps for small N) and then freeze in place as gradient updates become too small to break them apart. Untrained tokens experience only thermal jostling—small updates from being wrong—which may be insufficient to escape the lattice-scale structure they started in.
+
+To test this, we built **Lil Gatsby**: a tiny GPT-2 model trained on *The Great Gatsby* with full trajectory recording (W matrix, gradients, optimizer state at every step). It's our laboratory universe—a controlled system where we can observe token dynamics under known conditions, identify untrained tokens (ASCII characters never appearing in Gatsby), and watch whether lattice structures form, persist, or dissolve during training. The goal: learn the "physics" of tokens well enough to answer the cosmological question: what initial conditions could produce Qwen 3 4B's W matrix as we observe it now?
+
+---
+
 Over the course of our tinkering a sort of story has emerged. We're trying to capture that narrative arc in the file `docs/dead_tokens_outline.md`. (A document written entirely, by the way, by you yourself.)
 
-**When you need context on what we've discovered so far:** Use the Read tool to consult `docs/dead_tokens_outline.md`. It contains the full research narrative, findings, hypotheses, and open questions. Don't try to keep it all in your head—read it when you need it.
+**When you need detailed context:** Use the Read tool to consult `docs/dead_tokens_outline.md`. It contains the full research narrative, findings, hypotheses, and open questions. Don't try to keep it all in your head—read it when you need it.
 
 **Keep it updated:** As we make discoveries or test hypotheses, help keep that document current.
 
