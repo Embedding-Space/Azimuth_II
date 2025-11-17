@@ -12,3 +12,4 @@ data/
 .vscode/
 blog/tensors/Lil_Gatsby/checkpoint-*/
 **/.ipynb_checkpoints
+box_3/tensors/Lil_Gatsby/checkpoint-*/
