@@ -284,6 +284,24 @@ The **bfloat16 quantization** appears central to understanding token dynamics. T
 
 To test this, we built **Lil Gatsby**: a tiny GPT-2 model trained on *The Great Gatsby* with full trajectory recording (W matrix, gradients, optimizer state at every step). It's our laboratory universe—a controlled system where we can observe token dynamics under known conditions, identify untrained tokens (ASCII characters never appearing in Gatsby), and watch whether lattice structures form, persist, or dissolve during training. The goal: learn the "physics" of tokens well enough to answer the cosmological question: what initial conditions could produce Qwen 3 4B's W matrix as we observe it now?
 
+### A Hypothetical Freezing Mechanism
+
+**Caveat: This is speculation—plausible but likely incomplete, possibly wrong. Needs experimental validation.**
+
+We've reasoned our way to a potential explanation for why dead tokens freeze:
+
+**Central idea:** All tokens in the unembedding matrix receive gradient updates, even tokens that never appear in training data. The gradient for token i is proportional to its predicted probability p_i after softmax. In high dimensions, most embeddings are nearly orthogonal to any given hidden state, giving them small logits and thus small probabilities.
+
+**Early training:** The model is uncertain—softmax distribution is wide. Dead tokens get p_i ≈ 1/vocab_size (small but finite). Their gradients are tiny, but Adam's adaptive normalization converts these into finite step sizes (~0.001-0.003). Dead tokens jitter thermally, experiencing stochastic "backscatter" from being generically wrong.
+
+**As training progresses:** The model gains confidence—softmax sharpens. Probabilities concentrate on correct tokens. Dead tokens (consistently orthogonal to hidden states) get exponentially compressed: p_i drops from ~10^-4 to ~10^-8. Since gradient updates are proportional to exp(logit) ≈ p_i × Z, they shrink proportionally.
+
+**The freeze:** When p_i × lr × ||h|| falls below 1 ULP in bfloat16 representation, gradient updates round to zero displacement. Dead tokens **cannot move**—they're frozen by quantization. This happens sharply (not gradually) because softmax sharpening is exponential. All dead tokens freeze around the same time because they all experience the same confidence increase. Whatever structure formed during early thermal jitter (clustering, collisions, lattice configurations) gets permanently locked in place.
+
+**This would explain:** (1) why dead tokens move early but freeze later, (2) why the transition is sharp (~50 steps in small models), (3) why timing depends on model confidence, (4) why frozen structure persists indefinitely.
+
+**But:** This mechanism may be incomplete. Weight decay, tied embedding dynamics, batch effects, and optimizer momentum could all play roles we haven't accounted for. Also, in models with tied weights (which is what we're studying, as Qwen 3 4B has tied weights) there is an additional grad contribution from ∂L/∂E for tokens that appear in input for which we currently don't account. Consider this a working hypothesis awaiting further investigation and experimental tests.
+
 ---
 
 Over the course of our tinkering a sort of story has emerged. We're trying to capture that narrative arc in the file `docs/dead_tokens_outline.md`. (A document written entirely, by the way, by you yourself.)
@@ -326,5 +344,5 @@ See `references.bib` for BibTeX entries. Keep this updated as we pull in more pa
 
 ---
 
-*Last updated: November 15, 2025*
+*Last updated: November 19, 2025*
 *Working in Claude Code with Alpha*
