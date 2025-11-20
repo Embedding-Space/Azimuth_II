@@ -282,7 +282,7 @@ Zooming in, we found something stranger: many of these tokens aren't just *close
 
 The **bfloat16 quantization** appears central to understanding token dynamics. Tokens live on a discrete lattice: if a gradient update is smaller than 1 ULP at the current exponent, the token *cannot move* in bfloat16 representation. Our hypothesis: structures form early in training (within 10^N steps for small N) and then freeze in place as gradient updates become too small to break them apart. Untrained tokens experience only thermal jostling—small updates from being wrong—which may be insufficient to escape the lattice-scale structure they started in.
 
-To test this, we built **Lil Gatsby**: a tiny GPT-2 model trained on *The Great Gatsby* with full trajectory recording (W matrix, gradients, optimizer state at every step). It's our laboratory universe—a controlled system where we can observe token dynamics under known conditions, identify untrained tokens (ASCII characters never appearing in Gatsby), and watch whether lattice structures form, persist, or dissolve during training. The goal: learn the "physics" of tokens well enough to answer the cosmological question: what initial conditions could produce Qwen 3 4B's W matrix as we observe it now?
+To test this, we built a series of **model models**, small LMs that we could train to simulate how big LMs train. The goal: learn the "physics" of tokens well enough to answer the cosmological question: what initial conditions could produce Qwen 3 4B's W matrix as we observe it now?
 
 ### A Hypothetical Freezing Mechanism
 
@@ -328,21 +328,11 @@ See `pyproject.toml` for canonical versions. Key packages:
 
 ---
 
-## Git Workflow
-
-- Commit notebooks with outputs included
-- Commit generated data that's not impractically large (tensors, CSVs, reasonable plots)
-- Commit granularity: TBD, handle case-by-case (open to omnibus commits but like being able to retrace steps)
-
----
-
 ## References
-
-Park, K., Choe, Y. J., & Veitch, V. (2024). *The Linear Representation Hypothesis and the Geometry of Large Language Models.* arXiv:2311.03658.
 
 See `references.bib` for BibTeX entries. Keep this updated as we pull in more papers.
 
 ---
 
-*Last updated: November 19, 2025*
+*Last updated: November 20, 2025*
 *Working in Claude Code with Alpha*
