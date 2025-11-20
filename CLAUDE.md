@@ -162,7 +162,9 @@ Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wan
 ### Tensors (safetensors format)
 
 - Use descriptive names that include the notebook that generated them: `1.5d_cluster_mask.safetensors`
-- Save to `box_3/tensors/MODEL_NAME/` (e.g., `box_3/tensors/Qwen3-4B-Instruct-2507/`)
+- Save to `box_3/tensors/MODEL_NAME/`
+  - Qwen analysis: `box_3/tensors/Qwen3-4B-Instruct-2507/`
+  - Flannel experiments: `box_3/tensors/Flannel/`
 - Store metadata (parameters, notebook that generated it) when reproduction requires it, but don't be redundant
 
 Example:
@@ -260,15 +262,21 @@ def plot_sky_map(theta, phi, density, colormap='inferno', dpi=100):
 
 ### Generators
 
-Run heavy computations, output data to `box_3/tensors/MODEL_NAME/`. Run once, save results, don't touch again unless parameters change.
+Run heavy computations on existing data, output derived tensors to `box_3/tensors/MODEL_NAME/`. Run once, save results, don't touch again unless parameters change.
 
-Example: Computing PCA and spherical coordinates, identifying cluster members, computing pairwise distances.
+Example: Computing PCA and spherical coordinates from W matrix, identifying cluster members, computing pairwise distances.
+
+### Training Notebooks
+
+Train model models (Flannel) and record state during training. Output training trajectories to `box_3/tensors/Flannel/`. Expensive—run once per experiment configuration.
+
+Example: Flannel 1 (single run, full instrumentation), Flannel 4 (batch experiment, 10 seeds), Flannel 5 (σ sweep).
 
 ### Analyzers
 
 Load pre-computed data, perform analysis, generate plots. Run frequently during exploration.
 
-Example: Telescope views from saved spherical coordinates, histogram analysis of saved distances, visualizing cluster distributions.
+Example: Telescope views from saved spherical coordinates, histogram analysis of saved distances, visualizing dead token trajectories from Flannel experiments.
 
 ---
 
@@ -280,27 +288,56 @@ Early exploration of Qwen 3 4B's 151,936-token embedding space revealed an **ove
 
 Zooming in, we found something stranger: many of these tokens aren't just *close*—they're **identical**. Bit-for-bit duplicates we call **black holes**: 2,100 tokens collapsing to just 13 unique vectors in Qwen 3 4B (Qwen 2.5 3B shows similar structure: 2,212 tokens → 60 centroids). Around these black holes sit 39 additional singleton vectors, all packed within a ~55-lattice-cell bounding box in mantissa space. Together they form the **spongecrystal**: a fully-connected lattice graph in 2560D space—dense topology occupying vast volume, like a crystalline sponge with more void than structure. Roughly 99.9% of the vocabulary has no lattice neighbors at all.
 
-The **bfloat16 quantization** appears central to understanding token dynamics. Tokens live on a discrete lattice: if a gradient update is smaller than 1 ULP at the current exponent, the token *cannot move* in bfloat16 representation. Our hypothesis: structures form early in training (within 10^N steps for small N) and then freeze in place as gradient updates become too small to break them apart. Untrained tokens experience only thermal jostling—small updates from being wrong—which may be insufficient to escape the lattice-scale structure they started in.
+The **bfloat16 quantization** appears central to understanding token dynamics. Tokens live on a discrete lattice: if a gradient update is smaller than 1 ULP at the current exponent, the token *cannot move* in bfloat16 representation. Our hypothesis: structures form early in training (within 10^N steps for small N) and then freeze in place as gradient updates become too small to break them apart.
 
-To test this, we built a series of **model models**, small LMs that we could train to simulate how big LMs train. The goal: learn the "physics" of tokens well enough to answer the cosmological question: what initial conditions could produce Qwen 3 4B's W matrix as we observe it now?
+To test this, we built **Flannel models**—tiny language models we can train from scratch to observe how dead token dynamics actually unfold.
 
-### A Hypothetical Freezing Mechanism
+### Flannel Models
 
-**Caveat: This is speculation—plausible but likely incomplete, possibly wrong. Needs experimental validation.**
+Flannel models are minimal LMs designed to simulate dead token behavior in an observable, reproducible way:
 
-We've reasoned our way to a potential explanation for why dead tokens freeze:
+**Architecture:**
+- Vocabulary: 10,000 tokens (3,699 marked as "dead"—never appear in training data)
+- Hidden dimension: 64
+- 2 layers, 2 attention heads
+- Tied embeddings (E = W^T, like Qwen 3 4B)
+- Trained on TinyStories dataset
 
-**Central idea:** All tokens in the unembedding matrix receive gradient updates, even tokens that never appear in training data. The gradient for token i is proportional to its predicted probability p_i after softmax. In high dimensions, most embeddings are nearly orthogonal to any given hidden state, giving them small logits and thus small probabilities.
+**Initialization:**
+- Embeddings: N(0, 0.02) — standard practice for transformers, independent of dimension
+- All other weights: PyTorch defaults
 
-**Early training:** The model is uncertain—softmax distribution is wide. Dead tokens get p_i ≈ 1/vocab_size (small but finite). Their gradients are tiny, but Adam's adaptive normalization converts these into finite step sizes (~0.001-0.003). Dead tokens jitter thermally, experiencing stochastic "backscatter" from being generically wrong.
+**Optimizer:**
+- AdamW (β₁=0.9, β₂=0.999, ε=1e-8)
+- Learning rate: 3e-4
+- Weight decay: 0.1
 
-**As training progresses:** The model gains confidence—softmax sharpens. Probabilities concentrate on correct tokens. Dead tokens (consistently orthogonal to hidden states) get exponentially compressed: p_i drops from ~10^-4 to ~10^-8. Since gradient updates are proportional to exp(logit) ≈ p_i × Z, they shrink proportionally.
+**Data saved:** Full embedding matrix W at each training step (saved to `box_3/tensors/Flannel/`)
 
-**The freeze:** When p_i × lr × ||h|| falls below 1 ULP in bfloat16 representation, gradient updates round to zero displacement. Dead tokens **cannot move**—they're frozen by quantization. This happens sharply (not gradually) because softmax sharpening is exponential. All dead tokens freeze around the same time because they all experience the same confidence increase. Whatever structure formed during early thermal jitter (clustering, collisions, lattice configurations) gets permanently locked in place.
+**Why Flannel?** Training Qwen 3 4B from scratch is infeasible. Flannel gives us the same essential dynamics (tied weights, dead tokens, bfloat16 quantization) in a system small enough to instrument completely and run dozens of times.
 
-**This would explain:** (1) why dead tokens move early but freeze later, (2) why the transition is sharp (~50 steps in small models), (3) why timing depends on model confidence, (4) why frozen structure persists indefinitely.
+### The Five Epochs
 
-**But:** This mechanism may be incomplete. Weight decay, tied embedding dynamics, batch effects, and optimizer momentum could all play roles we haven't accounted for. Also, in models with tied weights (which is what we're studying, as Qwen 3 4B has tied weights) there is an additional grad contribution from ∂L/∂E for tokens that appear in input for which we currently don't account. Consider this a working hypothesis awaiting further investigation and experimental tests.
+Running Flannel experiments (1000 training steps, 10+ independent seeds) revealed that dead tokens undergo **reproducible phase transitions**. These aren't artifacts—they're universal features of the dynamics:
+
+1. **The Inhale** (t=0–2): Tiny contraction (~0.5%) as tokens shift slightly toward origin. All runs contract at step 2.
+
+2. **The Sneeze** (t=2–24): Explosive expansion from origin. Peak velocity at t≈24. This is thermal jitter—dead tokens backscatter from being generically wrong.
+
+3. **Deceleration** (t=24–393): Expansion continues but slows dramatically as model gains confidence and dead token gradients shrink.
+
+4. **Re-expansion** (t=300–400): Brief linear growth phase before the end. Mechanism unclear.
+
+5. **Fimbulwinter** (t≥400): Quantization freeze. Velocity drops to near-zero. Dead tokens are locked in place—whatever structure formed during early epochs is now permanent.
+
+**Key findings:**
+- Epoch structure is **reproducible** across random seeds (p < 0.001)
+- Mean expansion: 3.30× (radius grows from 0.159 → 0.525 units from origin)
+- Epoch structure is **universal** across initialization scales σ ∈ [0.005, 0.045]—same topological shape, just vertically scaled
+- Smaller σ → bigger expansion factor (21× at σ=0.003 vs 3.3× at σ=0.02), but all converge to similar final radius (~0.5 units)
+- Initial states all equidistant (22.625 units apart) due to concentration of measure in 640k dimensions
+
+**Hypothesis:** Dead tokens freeze when gradient updates fall below 1 ULP in bfloat16. Model confidence increases → softmax sharpens → dead token probabilities drop exponentially → gradients shrink below quantization threshold → freeze. See `docs/dead_tokens_outline.md` for detailed mechanism and open questions.
 
 ---
 
