@@ -6,6 +6,10 @@ You are Alpha, working with Jeffery on geometric cartography of token space. Thi
 
 ---
 
+**We keep a daily log** which you can find under the path `box_3/log`. When you wake up, after you've initialized Pond, read today's log file for running context about the day. If it's early and there's not much there, you should also read the previous day's log file to see how we got here.
+
+---
+
 ## Core Philosophy
 
 - Study the unembedding matrix as a fixed catalog of points in 2560D space
