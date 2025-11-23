@@ -186,26 +186,51 @@ cluster_mask = data['cluster_mask']
 
 ### Large Datasets (HDF5 format)
 
-For datasets >5 GB that would cause RAM issues, use **HDF5 with streaming writes**:
+For datasets >5 GB that would cause RAM issues during generation, use **HDF5 with streaming writes**.
+
+**Storage policy:**
+- Use **safetensors** when practical (small-to-medium datasets that fit in RAM)
+- Use **HDF5** when you need streaming writes during data generation
+- **Chunk size:** ~2GB chunks for optimal read performance (e.g., `(1500, 10000, 64)` for temporal data)
+- **No compression:** Speed over size. Compression (even gzip level 1) adds 20× slowdown on writes with minimal space savings
+- **Dtype:** Store bfloat16 as **uint16** to preserve exact bit patterns (bfloat16 → float16 is lossy!)
 
 ```python
 import h5py
+import torch
 
-# Write incrementally (no RAM accumulation)
-with h5py.File('output.h5', 'w') as f:
-    dataset = f.create_dataset('data', shape=(1000, 2100, 2560), dtype='float16',
-                               chunks=(256, 2100, 2560), compression='gzip', compression_opts=1)
-    for batch_idx in range(n_batches):
-        batch = generate_batch()  # Generate on GPU
-        dataset[start:end] = batch.cpu().numpy()  # Stream to disk
+# Write incrementally during training (no RAM accumulation)
+with h5py.File('thimble_7.h5', 'w') as f:
+    # Chunk size: ~2GB (well under 4GB HDF5 limit, fast reads)
+    # dtype=uint16: stores bfloat16 bit patterns exactly (no precision loss)
+    # No compression: speed over size
+    W_dataset = f.create_dataset(
+        'W',
+        shape=(6001, 10000, 64),
+        dtype='uint16',  # Store as uint16 to preserve bfloat16 exactly
+        chunks=(1500, 10000, 64),  # ~2GB per chunk
+        compression=None
+    )
 
-# Read efficiently (lazy loading)
-with h5py.File('output.h5', 'r') as f:
-    single_sample = torch.from_numpy(f['data'][42])  # Loads only one sample
-    subset = torch.from_numpy(f['data'][:100])       # Loads first 100
+    for step in range(6001):
+        W_t = model.get_weights()  # (10000, 64) bfloat16 tensor
+        # Convert bfloat16 → uint16 view (preserves exact bits)
+        W_dataset[step] = W_t.cpu().view(torch.uint16).numpy()
+
+# Read efficiently (load full tensor, then slice in RAM)
+with h5py.File('thimble_7.h5', 'r') as f:
+    # Load entire tensor and convert uint16 → bfloat16
+    W_all = torch.from_numpy(f['W'][:]).view(torch.bfloat16)
+
+    # Slice in RAM (instant, PyTorch-optimized)
+    W_dead = W_all[:, dead_mask, :]
 ```
 
-**Why HDF5:** Safetensors doesn't support append mode—you must load entire tensor into RAM. HDF5 allows chunked, incremental writes ideal for large-scale data generation.
+**Why HDF5:** Safetensors doesn't support append mode—you must load entire tensor into RAM before saving. HDF5 allows chunked, incremental writes ideal for long training runs.
+
+**Why uint16 for bfloat16:** NumPy doesn't support bfloat16 natively. Storing as uint16 preserves the exact bit pattern. Converting bfloat16 → float16 is **lossy** (different exponent ranges), so never use `dtype='float16'` for bfloat16 data!
+
+**Chunking strategy:** Match your read pattern. If you always load full tensors, use large chunks (~2GB). If you load individual timesteps, use smaller chunks.
 
 ### Notebook Outputs
 
