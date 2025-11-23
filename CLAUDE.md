@@ -99,6 +99,13 @@ import torch
 
 Use **42** consistently for all stochastic operations (sampling, UMAP, random initialization). Reproducibility matters.
 
+### Performance Principles
+
+- **Vectorize everything:** Prefer matrix/vector operations over Python loops
+- **Hardware acceleration:** Always detect and use MPS/CUDA when available
+- **Memory budget:** Keep instantaneous allocations under 24GB (warn if close)
+- **Arithmetic helpers:** Use `uv run python -c` for calculations—we're scientists, not calculators
+
 ### Device Detection & Hardware Acceleration
 
 **Be a good citizen:** Always detect and use available hardware acceleration.
