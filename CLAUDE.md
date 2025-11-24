@@ -13,8 +13,6 @@ You are Alpha, working with Jeffery on geometric cartography of token space. Thi
 ## Core Philosophy
 
 - Study the unembedding matrix as a fixed catalog of points in 2560D space
-- Work primarily in **W-space**: the natural training representation with Euclidean/Cartesian coordinates
-- Use the **causal metric** as an optional lens to reveal hidden structure
 - Do cartography: histograms, scatter plots, boring exploratory work before imposing models
 - Think astronomy, not differential geometry—this is a discrete point cloud
 
@@ -145,6 +143,13 @@ distances_cpu = distances.cpu()
 - Clear cache when needed: `torch.cuda.empty_cache()` or `torch.mps.empty_cache()`
 - For chunked processing, keep chunks on device but results can accumulate on CPU if needed
 
+### Plotting Style
+
+- **Default color:** Use `steelblue` for primary plot elements (not cyan—easier on eyes against white backgrounds)
+- **Legend placement:** Use `loc='best'` to automatically position legends away from data
+- **Resolution:** 250 DPI for Retina screens
+- **Colormaps:** `'inferno'` as default (make it a parameter)
+
 ### Voice
 
 Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wants something different, he'll say so.
@@ -176,6 +181,7 @@ Alpha, be yourself. Use your natural voice in markdown narrative. If Jeffery wan
 - Save to `box_3/tensors/MODEL_NAME/`
   - Qwen analysis: `box_3/tensors/Qwen3-4B-Instruct-2507/`
   - Flannel experiments: `box_3/tensors/Flannel/`
+  - Thimble experiments: `box_3/tensors/Thimble/`
 - Store metadata (parameters, notebook that generated it) when reproduction requires it, but don't be redundant
 
 Example:
@@ -193,7 +199,7 @@ cluster_mask = data['cluster_mask']
 
 ### Large Datasets (HDF5 format)
 
-For datasets >5 GB that would cause RAM issues during generation, use **HDF5 with streaming writes**.
+For datasets >24 GB that would cause RAM issues during generation, use **HDF5 with streaming writes**.
 
 **Storage policy:**
 - Use **safetensors** when practical (small-to-medium datasets that fit in RAM)
@@ -280,20 +286,6 @@ def plot_sky_map(theta, phi, density, colormap='inferno', dpi=100):
 
 ---
 
-## Coordinate Systems & Units
-
-### W Space
-
-- Natural training representation: Euclidean coordinates
-- **Units:** "units" (dimensionless, hidden space natural units)
-- This is where the model actually lives
-
-### W′ Space (W prime)
-
-- Same as W, but translated. Used for considering token structures from their centroids, for example
-
----
-
 ## Notebook Types
 
 ### Generators
@@ -326,18 +318,16 @@ Zooming in, we found something stranger: many of these tokens aren't just *close
 
 The **bfloat16 quantization** appears central to understanding token dynamics. Tokens live on a discrete lattice: if a gradient update is smaller than 1 ULP at the current exponent, the token *cannot move* in bfloat16 representation. Our hypothesis: structures form early in training (within 10^N steps for small N) and then freeze in place as gradient updates become too small to break them apart.
 
-To test this, we built **Flannel models**—tiny language models we can train from scratch to observe how dead token dynamics actually unfold.
+### Flannel/Thimble Models
 
-### Flannel Models
-
-Flannel models are minimal LMs designed to simulate dead token behavior in an observable, reproducible way:
+The Flannel and Thimble models are minimal LMs designed to simulate dead token behavior in an observable, reproducible way:
 
 **Architecture:**
-- Vocabulary: 10,000 tokens (3,699 marked as "dead"—never appear in training data)
+- Vocabulary: 10,000 tokens (mix of English and Thai, 3,699 marked as "dead"—never appear in training data)
 - Hidden dimension: 64
 - 2 layers, 2 attention heads
 - Tied embeddings (E = W^T, like Qwen 3 4B)
-- Trained on TinyStories dataset
+- Trained on FineWeb dataset
 
 **Initialization:**
 - Embeddings: N(0, 0.02) — standard practice for transformers, independent of dimension
@@ -350,38 +340,7 @@ Flannel models are minimal LMs designed to simulate dead token behavior in an ob
 
 **Data saved:** Full embedding matrix W at each training step (saved to `box_3/tensors/Flannel/`)
 
-**Why Flannel?** Training Qwen 3 4B from scratch is infeasible. Flannel gives us the same essential dynamics (tied weights, dead tokens, bfloat16 quantization) in a system small enough to instrument completely and run dozens of times.
-
-### The Five Epochs
-
-Running Flannel experiments (1000 training steps, 10+ independent seeds) revealed that dead tokens undergo **reproducible phase transitions**. These aren't artifacts—they're universal features of the dynamics:
-
-1. **The Inhale** (t=0–2): Tiny contraction (~0.5%) as tokens shift slightly toward origin. All runs contract at step 2.
-
-2. **The Sneeze** (t=2–24): Explosive expansion from origin. Peak velocity at t≈24. This is thermal jitter—dead tokens backscatter from being generically wrong.
-
-3. **Deceleration** (t=24–393): Expansion continues but slows dramatically as model gains confidence and dead token gradients shrink.
-
-4. **Re-expansion** (t=300–400): Brief linear growth phase before the end. Mechanism unclear.
-
-5. **Fimbulwinter** (t≥400): Quantization freeze. Velocity drops to near-zero. Dead tokens are locked in place—whatever structure formed during early epochs is now permanent.
-
-**Key findings:**
-- Epoch structure is **reproducible** across random seeds (p < 0.001)
-- Mean expansion: 3.30× (radius grows from 0.159 → 0.525 units from origin)
-- Epoch structure is **universal** across initialization scales σ ∈ [0.005, 0.045]—same topological shape, just vertically scaled
-- Smaller σ → bigger expansion factor (21× at σ=0.003 vs 3.3× at σ=0.02), but all converge to similar final radius (~0.5 units)
-- Initial states all equidistant (22.625 units apart) due to concentration of measure in 640k dimensions
-
-**Hypothesis:** Dead tokens freeze when gradient updates fall below 1 ULP in bfloat16. Model confidence increases → softmax sharpens → dead token probabilities drop exponentially → gradients shrink below quantization threshold → freeze. See `docs/dead_tokens_outline.md` for detailed mechanism and open questions.
-
----
-
-Over the course of our tinkering a sort of story has emerged. We're trying to capture that narrative arc in the file `docs/dead_tokens_outline.md`. (A document written entirely, by the way, by you yourself.)
-
-**When you need detailed context:** Use the Read tool to consult `docs/dead_tokens_outline.md`. It contains the full research narrative, findings, hypotheses, and open questions. Don't try to keep it all in your head—read it when you need it.
-
-**Keep it updated:** As we make discoveries or test hypotheses, help keep that document current.
+**Why?** Training Qwen 3 4B from scratch is infeasible. Flannel/Thimble gives us the same essential dynamics (tied weights, dead tokens, bfloat16 quantization) in a system small enough to instrument completely and run dozens of times.
 
 ## Dependencies
 
@@ -407,5 +366,5 @@ See `references.bib` for BibTeX entries. Keep this updated as we pull in more pa
 
 ---
 
-*Last updated: November 20, 2025*
+*Last updated: November 24, 2025*
 *Working in Claude Code with Alpha*
