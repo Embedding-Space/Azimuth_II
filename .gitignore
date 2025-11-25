@@ -14,3 +14,5 @@ blog/tensors/Lil_Gatsby/checkpoint-*/
 **/.ipynb_checkpoints
 archive/box_3/tensors/*/checkpoint-*/
 box_4/tensors/*/checkpoint-*/
+box_4/tensors/*/checkpoints/
+box_4/tensors/*/*.json
