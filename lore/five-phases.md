@@ -8,13 +8,20 @@ Dead tokens undergo a cooling process during training, transitioning through fiv
 
 ## The Phases
 
-| Phase | |ΔW′| Range | Character |
-|-------|-----------|-----------|
+Four phases defined by L2 displacement magnitude:
+
+| Phase | |ΔW′|₂ Range | Character |
+|-------|-------------|-----------|
 | **Classical Gas** | > 100 ULP | Violent, continuous motion. Tokens moving many quantization cells per step. Early training chaos. |
 | **Quantum** | 10–100 ULP | Still energetic but quantization becoming relevant. Discrete hops visible. |
 | **Thermal** | 1–10 ULP | Tokens hopping a few cells at a time. The "interesting middle" where dynamics are heterogeneous. |
-| **Stumbling** | 0.1–1 ULP | Single-cell hops. Tokens barely moving, testing the lattice boundaries. Last gasp before freeze. |
-| **Fimbulwinter** | < 0.1 ULP | Frozen solid. No detectable motion. The long silence. |
+| **Fimbulwinter** | 0 (sustained) | Frozen solid. No detectable motion. The long silence. |
+
+Plus one *behavioral* phase:
+
+| Phase | Criterion | Character |
+|-------|-----------|-----------|
+| **Stumbling** | L1 ∈ {0, 1} per step | Moving exactly one lattice cell at a time, or not at all. The approach to freezing. |
 
 ## Physical Intuition
 
@@ -30,13 +37,13 @@ The lattice (bfloat16 quantization grid) is always there, but only becomes *cons
 
 ## Key Insight: Stumbling
 
-The stumbling phase (0.1–1 ULP) is where individual tokens "decide" to freeze. Some fight longer than others. The heatmap shows purple speckles—tokens moving exactly 1 cell while neighbors are already frozen.
+Stumbling is the behavioral signature of a token approaching freeze. During stumbling, a token alternates between single-cell hops (L1 = 1) and stillness (L1 = 0). It's "feeling out" the lattice, testing whether it has enough momentum to escape or will finally lock in place.
 
-This is not noise. It's the signature of the phase transition at the individual token level.
+The stumbling *duration*—how long a token spends in this regime before final freeze—varies per token. Some freeze quickly after their last multi-cell hop; others stumble for hundreds of steps.
 
 ## Boundary Notes
 
-The boundaries (100, 10, 1, 0.1) are round numbers for convenience. The actual physics is continuous, but these bins capture qualitatively different behavior.
+The L2 magnitude boundaries (100, 10, 1) are round numbers for convenience. The actual physics is continuous, but these bins capture qualitatively different behavior. Stumbling uses L1 (sum of absolute per-dimension displacements) because it's about counting *how many* dimensions moved, not the vector magnitude.
 
 ## Visualization
 
