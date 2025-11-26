@@ -11,14 +11,20 @@ Dead tokens pass through three behavioral phases during training, ending in perm
 | Phase | Criterion | Character |
 |-------|-----------|-----------|
 | **Early** | \|ΔW′\|₂ > √D (~8 ULP) | Multi-cell jumps. Tokens teleport across the lattice, moving many cells per step. |
-| **Midlife** | \|ΔW′\|₂ ≤ √D, L1 > 1 | Local motion. Tokens move to neighboring cells, including diagonals. Rolling around. |
-| **Late** | L1 ∈ {0, 1} | Intermittent single-axis hops. Tokens move at most one cell in one dimension, and not every step. |
+| **Midlife** | L∞ > 1 | Local but vigorous. Some dimensions move multiple cells per step. |
+| **Late** | L∞ ≤ 1 | Adjacent-cell motion only. Every move is to a neighboring cell (orthogonal or diagonal). |
 | **Fimbulwinter** | L1 = 0 sustained | Frozen. No detectable motion. Permanent. |
+
+**Norm definitions:**
+- **L1** = Σ\|ΔW′ᵢ\| — total cells moved across all dimensions
+- **L∞** = max(\|ΔW′ᵢ\|) — farthest any single dimension moved
+
+So L1 = 1 means "exactly one dimension moved exactly one cell" (single-axis hop), while L∞ ≤ 1 means "no dimension moved more than one cell" (adjacent cell, possibly diagonal).
 
 ## Boundary Definitions
 
 - **Early → Midlife:** When a token's L2 displacement drops to √D or below for the last time
-- **Midlife → Late:** When a token's L1 displacement drops to 1 or below for the last time
+- **Midlife → Late:** When a token's L∞ displacement drops to 1 for the last time
 - **Late → Fimbulwinter:** When a token stops moving and never moves again
 
 The "last time" framing matters. Tokens don't transition smoothly—they chatter around boundaries before definitively crossing. We define phase by the *final* exit from each regime.
@@ -28,7 +34,7 @@ The "last time" framing matters. Tokens don't transition smoothly—they chatter
 | Transition | Median Step |
 |------------|-------------|
 | Last Early (exit \|ΔW′\|₂ > √D) | ~121 |
-| Last Midlife (exit L1 > 1) | ~712 |
+| Last Midlife (exit L∞ > 1) | ~712 |
 | Fimbulwinter onset | ~1542 |
 
 ## What Drives the Transitions
@@ -49,9 +55,10 @@ Fimbulwinter arrives when the AdamW update rounds to zero in bfloat16. The conti
 
 ## Related
 
+- [lattice-scale.md](lattice-scale.md) — When to use lattice vs weight-space metrics
+- [fimbulwinter-onset.md](fimbulwinter-onset.md) — Freeze timing details
 - `box_4/notebooks/exploration/token_lifecycles.ipynb` — Lifecycle visualization
 - `box_4/notebooks/exploration/centroid_dynamics.ipynb` — Cloud motion analysis
-- [fimbulwinter-onset.md](fimbulwinter-onset.md) — Freeze timing details
 
 ---
 
