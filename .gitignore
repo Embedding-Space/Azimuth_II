@@ -16,3 +16,5 @@ archive/box_3/tensors/*/checkpoint-*/
 box_4/tensors/*/checkpoint-*/
 box_4/tensors/*/checkpoints/
 box_4/tensors/*/*.json
+box_4/notebooks/analysis/*.png
+box_4/scratch/

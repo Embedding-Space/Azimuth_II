@@ -1,6 +1,6 @@
 # Notebook Conventions
 
-> **Last updated:** 2025-11-25
+> **Last updated:** 2025-11-27
 
 ## In brief
 
@@ -97,15 +97,37 @@ distances_cpu = distances.cpu()
 | Colormap | `'inferno'` (always parameterized) |
 | Library | matplotlib default; Plotly only for essential 3D interactivity |
 
-**"Naked-eye" plots** (representing tokens in space): black axes face color, light-on-dark gridlines.
+### Two modes: Light (default) vs Naked-eye
+
+**Light mode (default):** Standard matplotlib styling with white/light background. Use for all regular data analysis: histograms, scatter plots, connectivity curves, line charts, etc.
 
 ```python
+fig, ax = plt.subplots(figsize=(10, 6), dpi=200)
+ax.hist(distances, bins=50, color='steelblue', edgecolor='white')
+ax.set_xlabel('Distance')
+ax.set_ylabel('Count')
+plt.tight_layout()
+plt.show()
+```
+
+**Naked-eye mode:** Black background with light-on-dark elements. Use *only* for astronomical visualizations where we're treating tokens as stars in a void—sky maps, celestial projections, spatial point clouds where "no data = empty space." The analogy is looking at the night sky: black means nothing there.
+
+```python
+# Naked-eye: for sky maps and spatial point clouds
 fig, ax = plt.subplots(figsize=(12, 6), dpi=200)
 ax.set_facecolor('black')
+fig.patch.set_facecolor('black')
 scatter = ax.scatter(phi, theta, c=density, cmap='inferno', s=1)
+ax.tick_params(colors='white')
+ax.set_xlabel('φ', color='white')
 plt.colorbar(scatter)
 plt.show()
 ```
+
+**Examples:**
+- Sky map projections (`1.3a_sky_map.ipynb`, `1.3b_equatorial_map.ipynb`) → naked-eye
+- Distance histograms, connectivity curves, ratio distributions → light mode
+- Network graphs showing token adjacency → could go either way, use judgment
 
 ## Progress & logging
 

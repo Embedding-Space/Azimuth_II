@@ -1,6 +1,8 @@
 # The Spongecrystal
 
-> **Last updated:** 2025-11-25
+> ⚠️ **OUTDATED:** This lore card reflects our understanding as of November 25, 2025. Subsequent investigation revealed significant errors and oversimplifications. See **`frozen-smoke.md`** for current understanding.
+
+> **Last updated:** 2025-11-25 (superseded)
 
 ## In brief
 
