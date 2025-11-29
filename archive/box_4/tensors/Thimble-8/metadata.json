@@ -1,0 +1,59 @@
+{
+  "experiment": "Thimble 8",
+  "date": "2025-11-25",
+  "total_steps": 4000,
+  "batch_size": 128,
+  "seq_len": 128,
+  "learning_rate": 0.0003,
+  "weight_decay": 0.1,
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "epsilon": 1e-08,
+  "vocab_size": 10000,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "num_heads": 2,
+  "random_seed": 42,
+  "n_dead_tokens": 3699,
+  "checkpoint_steps": [
+    0,
+    1,
+    10,
+    100,
+    500,
+    1000,
+    2000,
+    3000,
+    3500,
+    4000
+  ],
+  "final_loss": 6.28125,
+  "total_epochs": 49,
+  "device": "mps",
+  "data_shapes": {
+    "W": [
+      4001,
+      3699,
+      64
+    ],
+    "m": [
+      4001,
+      3699,
+      64
+    ],
+    "v": [
+      4001,
+      3699,
+      64
+    ],
+    "g": [
+      4001,
+      3699,
+      64
+    ],
+    "loss": [
+      4001
+    ]
+  },
+  "notes": "Dead tokens only. W stored as uint16 (bfloat16 bit pattern)."
+}

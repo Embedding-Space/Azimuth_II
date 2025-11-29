@@ -1,0 +1,14 @@
+{
+  "model_id": "Qwen/Qwen3-4B-Instruct-2507",
+  "extraction_date": "2025-11-26T17:01:34.320589",
+  "vocab_size": 151936,
+  "hidden_dim": 2560,
+  "n_unique_vectors": 149849,
+  "n_black_holes": 13,
+  "n_tokens_in_black_holes": 2100,
+  "n_spongecrystal_tokens": 2123,
+  "n_unique_in_core_structure": 36,
+  "n_neighborhood_tokens": 2212,
+  "neighborhood_exponent_tolerance": 5,
+  "flood_fill_iterations": 3
+}

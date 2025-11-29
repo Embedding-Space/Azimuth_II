@@ -1,0 +1,38 @@
+{
+  "experiment": "Crucible 4",
+  "series": "Crucible",
+  "date": "2025-11-28",
+  "total_steps": 5000,
+  "batch_size": 128,
+  "seq_len": 128,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0,
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "epsilon": 1e-08,
+  "vocab_size": 10000,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "num_heads": 2,
+  "random_seed": 42,
+  "n_dead_tokens": 3699,
+  "n_live_tokens": 6301,
+  "final_loss": 5.25,
+  "total_epochs": 61,
+  "device": "mps",
+  "data_shapes": {
+    "W": [
+      5001,
+      10000,
+      64
+    ],
+    "h_mean": [
+      5000,
+      64
+    ],
+    "loss": [
+      5001
+    ]
+  },
+  "notes": "Long-duration run to observe h_mean swing amplitude over 5000 steps. Same seed as Crucible 3 - first 500 steps should match exactly."
+}

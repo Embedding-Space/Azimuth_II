@@ -1,0 +1,38 @@
+{
+  "experiment": "Crucible 3",
+  "series": "Crucible",
+  "date": "2025-11-28",
+  "total_steps": 500,
+  "batch_size": 128,
+  "seq_len": 128,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0,
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "epsilon": 1e-08,
+  "vocab_size": 10000,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "num_heads": 2,
+  "random_seed": 42,
+  "n_dead_tokens": 3699,
+  "n_live_tokens": 6301,
+  "final_loss": 6.15625,
+  "total_epochs": 7,
+  "device": "mps",
+  "data_shapes": {
+    "W": [
+      501,
+      10000,
+      64
+    ],
+    "h_mean": [
+      500,
+      64
+    ],
+    "loss": [
+      501
+    ]
+  },
+  "notes": "h_mean persistence and live/dead separation study. Records all tokens + h_mean[t]. Same seed as Crucible 1 & 2."
+}

@@ -1,0 +1,59 @@
+{
+  "experiment": "Crucible 2",
+  "series": "Crucible",
+  "date": "2025-11-25",
+  "total_steps": 500,
+  "batch_size": 128,
+  "seq_len": 128,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0,
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "epsilon": 1e-08,
+  "vocab_size": 10000,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "num_heads": 2,
+  "random_seed": 42,
+  "motion_threshold": 0.1,
+  "n_dead_tokens": 3699,
+  "final_loss": 6.15625,
+  "total_epochs": 7,
+  "device": "mps",
+  "global_last_motion": 500,
+  "tokens_still_moving": 2270,
+  "data_shapes": {
+    "W": [
+      501,
+      3699,
+      64
+    ],
+    "m": [
+      501,
+      3699,
+      64
+    ],
+    "v": [
+      501,
+      3699,
+      64
+    ],
+    "g": [
+      500,
+      3699,
+      64
+    ],
+    "delta_W_prime": [
+      500,
+      3699,
+      64
+    ],
+    "loss": [
+      501
+    ],
+    "last_motion_step": [
+      3699
+    ]
+  },
+  "notes": "High-resolution phase transition study. Same seed as Crucible 1. Records W, m, v, g."
+}

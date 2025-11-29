@@ -1,0 +1,48 @@
+{
+  "experiment": "Crucible 1",
+  "series": "Crucible",
+  "date": "2025-11-25",
+  "total_steps": 5000,
+  "batch_size": 128,
+  "seq_len": 128,
+  "learning_rate": 0.001,
+  "weight_decay": 0.0,
+  "beta1": 0.9,
+  "beta2": 0.999,
+  "epsilon": 1e-08,
+  "vocab_size": 10000,
+  "hidden_dim": 64,
+  "num_layers": 2,
+  "num_heads": 2,
+  "random_seed": 42,
+  "motion_threshold": 0.1,
+  "n_dead_tokens": 3699,
+  "final_loss": 5.25,
+  "total_epochs": 61,
+  "device": "mps",
+  "global_last_motion": 2509,
+  "fimbulwinter_duration": 2491,
+  "data_shapes": {
+    "W": [
+      5001,
+      3699,
+      64
+    ],
+    "delta_W_prime": [
+      5000,
+      3699,
+      64
+    ],
+    "centroid": [
+      5001,
+      64
+    ],
+    "loss": [
+      5001
+    ],
+    "last_motion_step": [
+      3699
+    ]
+  },
+  "notes": "First Crucible experiment. Fast lr, no weight decay. Full lifecycle capture."
+}
